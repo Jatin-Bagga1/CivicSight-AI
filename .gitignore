@@ -1,0 +1,169 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Firebase & Sensitive Configuration Files
+# WARNING: Never commit these files with sensitive keys!  
+android/app/google-services.json
+firebase_options.dart  # Generated Firebase configuration
+lib/firebase_options.dart
+.firebase/
+.firebaserc
+firebase-debug.log
+firestore-debug.log
+pubspec.lock  # Lock file should generally be committed, but can be ignored for apps
+
+# Environment & Secret Files
+.env
+.env.local
+.env.*.local
+*.key
+*.keystore
+*.jks
+key.properties
+secrets/
+
+# Local Android Configuration
+android/local.properties
+android/key.properties
+android/.gradle/
+android/gradle/
+android/gradlew
+android/gradlew.bat
+
+# iOS Specific
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/flutter_export_environment.sh
+ios/Runner.xcworkspace/xcuserdata/
+ios/Runner.xcodeproj/xcuserdata/
+ios/Runner.xcodeproj/project.xcworkspace/xcuserdata/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.moved-aside
+*.hmap
+*.ipa
+ios/.generated/
+
+# macOS Specific
+macos/Pods/
+macos/Flutter/ephemeral/
+macos/.symlinks/
+
+# Windows Specific
+windows/flutter/ephemeral/
+
+# Linux Specific  
+linux/flutter/ephemeral/
+
+# Web Specific
+web/firebase-config.js
+
+# IDE & Editor Specific
+.vscode/
+.vscode/templates
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Test Coverage
+coverage/
+test/.test_coverage.dart
+lcov.info
+
+# Database & Cache
+*.db
+*.sqlite
+*.sqlite3
+*.hive
+*.g.dart  # Generated files from build_runner (optional)
+
+# Logs & Debugging
+*.log
+logs/
+*.stacktrace
+flutter_*.log
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Package Manager
+.packages
+.pub/
+.pub-cache/
+pubspec.lock  # Include this if library, exclude if app
+
+# Build & Generated Files
+**/build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.dart_tool/
+generated_plugin_registrant.dart
+lib/generated/
+
+# Temporary & Backup Files
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+
+# User-specific files
+*.user
+*.userosscache
+*.sln.docstates
