@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../Screens/login_screen.dart';
 import '../Screens/signup_screen.dart';
 import '../Screens/home_screen.dart';
+import '../Screens/profile_setup_screen.dart';
 import 'page_transitions.dart';
 
 /// Centralized routing with custom transitions
@@ -11,6 +12,7 @@ class AppRouter {
   static const String login = '/login';
   static const String signup = '/signup';
   static const String home = '/home';
+  static const String profileSetup = '/profile-setup';
 
   /// Generate route with appropriate transition
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -23,6 +25,9 @@ class AppRouter {
       
       case home:
         return PageTransitions.scale(page: const HomeScreen());
+      
+      case profileSetup:
+        return PageTransitions.slideUp(page: const ProfileSetupScreen());
       
       default:
         return PageTransitions.fade(

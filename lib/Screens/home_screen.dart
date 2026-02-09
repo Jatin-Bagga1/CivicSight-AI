@@ -43,14 +43,14 @@ class HomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          user?.displayName ?? 'User',
+                          user?.fullName ?? 'User',
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1A2B47),
                           ),
                         ),
-                        if (user?.userRole != null)
+                        if (user != null)
                           Container(
                             margin: const EdgeInsets.only(top: 4),
                             padding: const EdgeInsets.symmetric(
@@ -58,15 +58,15 @@ class HomeScreen extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: user!.userRole == UserRole.fieldWorker
+                              color: user.role == UserRole.worker
                                   ? const Color(0xFF1A4D94)
                                   : const Color(0xFFF28C38),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              user.userRole == UserRole.fieldWorker
-                                  ? 'Field Worker'
-                                  : 'Civilian',
+                              user.role == UserRole.worker
+                                  ? '🔧 Field Worker'
+                                  : '👤 Citizen',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
@@ -133,11 +133,11 @@ class HomeScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(15),
-                          boxShadow: [
+                          boxShadow: const [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
+                              color: Color(0x1A000000),
                               blurRadius: 10,
-                              offset: const Offset(0, 5),
+                              offset: Offset(0, 5),
                             ),
                           ],
                         ),

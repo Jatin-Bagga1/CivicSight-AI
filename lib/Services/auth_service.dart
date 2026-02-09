@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Models/user_model.dart' as models;
 
@@ -8,16 +9,22 @@ class AuthResult {
   final models.UserModel? user;
   final String? errorMessage;
   final AuthErrorType? errorType;
+  final bool needsProfileSetup;
 
   AuthResult({
     required this.success,
     this.user,
     this.errorMessage,
     this.errorType,
+    this.needsProfileSetup = false,
   });
 
-  factory AuthResult.success(models.UserModel user) {
-    return AuthResult(success: true, user: user);
+  factory AuthResult.success(models.UserModel user, {bool needsProfileSetup = false}) {
+    return AuthResult(
+      success: true,
+      user: user,
+      needsProfileSetup: needsProfileSetup,
+    );
   }
 
   factory AuthResult.failure(String message, {AuthErrorType? errorType}) {
@@ -51,11 +58,12 @@ class AuthService {
   AuthService._internal();
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   models.UserModel? _currentUser;
 
   // SharedPreferences keys
+  static const String _userIdKey = 'user_id';
   static const String _lastActivityKey = 'last_activity_timestamp';
-  static const String _userRoleKey = 'user_role';
   static const int _inactivityPeriodDays = 60; // 2 months
 
   /// Get current authenticated user
@@ -63,6 +71,10 @@ class AuthService {
 
   /// Check if user is logged in
   bool get isLoggedIn => _currentUser != null;
+
+  /// Check if current user needs profile setup
+  bool get needsProfileSetup =>
+      _currentUser != null && !_currentUser!.isProfileComplete;
 
   /// Get Firebase Auth instance
   FirebaseAuth get firebaseAuth => _firebaseAuth;
@@ -80,18 +92,8 @@ class AuthService {
           // Update last activity
           await _updateLastActivity();
 
-          // Load user role from preferences
-          final prefs = await SharedPreferences.getInstance();
-          final roleString = prefs.getString(_userRoleKey);
-          final userRole = roleString != null
-              ? models.UserRole.fromString(roleString)
-              : null;
-
-          // Restore user session
-          _currentUser = _userModelFromFirebaseUser(
-            firebaseUser,
-            userRole: userRole,
-          );
+          // Check Firestore for user profile
+          _currentUser = await _getOrCreateFirestoreUser(firebaseUser);
         } else {
           // Session expired, logout
           await logout();
@@ -125,46 +127,125 @@ class AuthService {
     }
   }
 
-  /// Update last activity timestamp
+  /// Update last activity timestamp in both SharedPreferences and Firestore
   Future<void> _updateLastActivity() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(
-        _lastActivityKey,
-        DateTime.now().millisecondsSinceEpoch,
-      );
+      final now = DateTime.now();
+      
+      // Run SharedPreferences and Firestore updates in parallel
+      final futures = <Future>[
+        SharedPreferences.getInstance().then((prefs) =>
+          prefs.setInt(_lastActivityKey, now.millisecondsSinceEpoch),
+        ),
+      ];
+
+      // Update Firestore if user is logged in
+      if (_currentUser != null) {
+        futures.add(
+          _firestore
+              .collection('users')
+              .doc(_currentUser!.uid)
+              .update({
+                'lastLoginAt': now,
+                'updatedAt': now,
+              }),
+        );
+      }
+
+      await Future.wait(futures);
     } catch (e) {
       print('Error updating last activity: $e');
     }
   }
 
-  /// Save user role to preferences
-  Future<void> _saveUserRole(models.UserRole? role) async {
-    try {
-      if (role != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_userRoleKey, role.name);
-      }
-    } catch (e) {
-      print('Error saving user role: $e');
+  /// Check if user exists in Firestore, create if not, return UserModel
+  Future<models.UserModel> _getOrCreateFirestoreUser(User firebaseUser) async {
+    final userDoc = await _firestore
+        .collection('users')
+        .doc(firebaseUser.uid)
+        .get();
+
+    if (userDoc.exists) {
+      // User exists - return existing profile
+      return models.UserModel.fromFirestore(userDoc.data()!);
+    } else {
+      // User does NOT exist - create new profile with basic info
+      final newUser = _userModelFromFirebaseUser(firebaseUser);
+
+      // Save to Firestore
+      await _firestore
+          .collection('users')
+          .doc(firebaseUser.uid)
+          .set(newUser.toFirestore());
+
+      return newUser;
     }
   }
 
-  /// Convert Firebase User to UserModel
+  /// Update user profile in Firestore (called from ProfileSetupScreen)
+  Future<AuthResult> updateUserProfile({
+    required String fullName,
+    required models.UserRole role,
+    String? phone,
+  }) async {
+    try {
+      if (_currentUser == null) {
+        return AuthResult.failure('No user logged in');
+      }
+
+      if (fullName.trim().isEmpty) {
+        return AuthResult.failure('Full name is required');
+      }
+
+      final now = DateTime.now();
+
+      // Update Firestore document
+      await _firestore
+          .collection('users')
+          .doc(_currentUser!.uid)
+          .update({
+            'fullName': fullName.trim(),
+            'role': role.name,
+            'phone': phone?.trim(),
+            'updatedAt': now,
+          });
+
+      // Update local user model
+      _currentUser = _currentUser!.copyWith(
+        fullName: fullName.trim(),
+        role: role,
+        phone: phone?.trim(),
+        updatedAt: now,
+      );
+
+      return AuthResult.success(_currentUser!);
+    } catch (e) {
+      return AuthResult.failure(
+        'Failed to update profile. Please try again.',
+        errorType: AuthErrorType.unknown,
+      );
+    }
+  }
+
+  /// Convert Firebase User to UserModel (for new users without profile)
   models.UserModel _userModelFromFirebaseUser(
     User firebaseUser, {
-    models.UserRole? userRole,
+    models.UserRole role = models.UserRole.citizen,
+    String? fullName,
+    String? phone,
   }) {
+    final now = DateTime.now();
     return models.UserModel(
       uid: firebaseUser.uid,
+      role: role,
+      fullName: fullName ?? firebaseUser.displayName ?? '',
       email: firebaseUser.email ?? '',
-      displayName: firebaseUser.displayName,
-      photoUrl: firebaseUser.photoURL,
-      phoneNumber: firebaseUser.phoneNumber,
-      authProvider: _getAuthProvider(firebaseUser),
-      userRole: userRole,
-      createdAt: firebaseUser.metadata.creationTime,
+      phone: phone,
+      status: models.UserStatus.active,
+      createdAt: firebaseUser.metadata.creationTime ?? now,
+      updatedAt: now,
       lastLoginAt: firebaseUser.metadata.lastSignInTime,
+      authProvider: _getAuthProvider(firebaseUser),
     );
   }
 
@@ -229,22 +310,16 @@ class AuthService {
           .signInWithEmailAndPassword(email: email, password: password);
 
       if (credential.user != null) {
+        // Check Firestore: get existing user or create new
+        _currentUser = await _getOrCreateFirestoreUser(credential.user!);
+
         // Update last activity
         await _updateLastActivity();
 
-        // Load user role from preferences
-        final prefs = await SharedPreferences.getInstance();
-        final roleString = prefs.getString(_userRoleKey);
-        final userRole = roleString != null
-            ? models.UserRole.fromString(roleString)
-            : null;
+        // Check if profile needs setup
+        final needsSetup = !_currentUser!.isProfileComplete;
 
-        _currentUser = _userModelFromFirebaseUser(
-          credential.user!,
-          userRole: userRole,
-        );
-
-        return AuthResult.success(_currentUser!);
+        return AuthResult.success(_currentUser!, needsProfileSetup: needsSetup);
       }
 
       return AuthResult.failure('Login failed. Please try again.');
@@ -262,8 +337,9 @@ class AuthService {
   Future<AuthResult> registerWithEmailPassword({
     required String email,
     required String password,
-    String? displayName,
-    models.UserRole? userRole,
+    required String fullName,
+    required models.UserRole role,
+    String? phone,
   }) async {
     try {
       // Validate inputs
@@ -300,24 +376,30 @@ class AuthService {
           .createUserWithEmailAndPassword(email: email, password: password);
 
       if (credential.user != null) {
-        // Update display name if provided
-        if (displayName != null && displayName.isNotEmpty) {
-          await credential.user!.updateDisplayName(displayName);
-          await credential.user!.reload();
-        }
+        final firebaseUser = credential.user!;
+
+        // Update display name in Firebase Auth
+        await firebaseUser.updateDisplayName(fullName);
+        await firebaseUser.reload();
+
+        // Create user profile in Firestore with full details
+        final userModel = _userModelFromFirebaseUser(
+          firebaseUser,
+          role: role,
+          fullName: fullName,
+          phone: phone,
+        );
+
+        // Save to Firestore (use set to create document with Firebase UID as doc ID)
+        await _firestore
+            .collection('users')
+            .doc(firebaseUser.uid)
+            .set(userModel.toFirestore());
 
         // Update last activity
         await _updateLastActivity();
 
-        // Save user role
-        await _saveUserRole(userRole);
-
-        final updatedUser = _firebaseAuth.currentUser;
-
-        _currentUser = _userModelFromFirebaseUser(
-          updatedUser!,
-          userRole: userRole,
-        );
+        _currentUser = userModel;
 
         return AuthResult.success(_currentUser!);
       }
@@ -436,7 +518,7 @@ class AuthService {
       // Clear session data from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_lastActivityKey);
-      await prefs.remove(_userRoleKey);
+      await prefs.remove(_userIdKey);
 
       // Clear current user
       _currentUser = null;
@@ -447,9 +529,12 @@ class AuthService {
     }
   }
 
+  /// Cached email regex for validation
+  static final RegExp _emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+
   /// Validate email format
   bool _isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+    return _emailRegex.hasMatch(email);
   }
 
   /// Handle Firebase authentication errors

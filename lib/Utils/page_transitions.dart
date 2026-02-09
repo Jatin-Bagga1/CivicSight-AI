@@ -72,7 +72,7 @@ class PageTransitions {
   /// Slide from bottom transition - modal style
   static PageRouteBuilder<T> slideUp<T>({
     required Widget page,
-    Duration duration = const Duration(milliseconds: 350),
+    Duration duration = const Duration(milliseconds: 280),
     Curve curve = Curves.easeOutCubic,
   }) {
     return PageRouteBuilder<T>(
@@ -128,7 +128,7 @@ class PageTransitions {
   /// Fade through transition - Material Design style
   static PageRouteBuilder<T> fadeThrough<T>({
     required Widget page,
-    Duration duration = const Duration(milliseconds: 400),
+    Duration duration = const Duration(milliseconds: 300),
   }) {
     return PageRouteBuilder<T>(
       pageBuilder: (context, animation, secondaryAnimation) => page,
