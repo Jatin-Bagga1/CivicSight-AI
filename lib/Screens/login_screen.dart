@@ -51,9 +51,13 @@ class _LoginScreenContentState extends State<_LoginScreenContent> {
     if (_formKey.currentState?.validate() ?? false) {
       final success = await viewModel.login();
       if (success) {
-        _showSnackBar('Login successful! Welcome ${viewModel.user?.displayName}');
+        _showSnackBar('Login successful! Welcome ${viewModel.user?.fullName}');
         if (mounted) {
-          AppRouter.navigateAndReplace(context, AppRouter.home);
+          if (viewModel.needsProfileSetup) {
+            AppRouter.navigateAndReplace(context, AppRouter.profileSetup);
+          } else {
+            AppRouter.navigateAndReplace(context, AppRouter.home);
+          }
         }
       } else if (viewModel.errorMessage != null) {
         _showSnackBar(viewModel.errorMessage!, isError: true);
@@ -81,7 +85,11 @@ class _LoginScreenContentState extends State<_LoginScreenContent> {
     if (success) {
       _showSnackBar('Google login successful!');
       if (mounted) {
-        AppRouter.navigateAndReplace(context, AppRouter.home);
+        if (viewModel.needsProfileSetup) {
+          AppRouter.navigateAndReplace(context, AppRouter.profileSetup);
+        } else {
+          AppRouter.navigateAndReplace(context, AppRouter.home);
+        }
       }
     } else if (viewModel.errorMessage != null) {
       _showSnackBar(viewModel.errorMessage!, isError: true);
@@ -94,7 +102,11 @@ class _LoginScreenContentState extends State<_LoginScreenContent> {
     if (success) {
       _showSnackBar('Facebook login successful!');
       if (mounted) {
-        AppRouter.navigateAndReplace(context, AppRouter.home);
+        if (viewModel.needsProfileSetup) {
+          AppRouter.navigateAndReplace(context, AppRouter.profileSetup);
+        } else {
+          AppRouter.navigateAndReplace(context, AppRouter.home);
+        }
       }
     } else if (viewModel.errorMessage != null) {
       _showSnackBar(viewModel.errorMessage!, isError: true);
@@ -102,8 +114,13 @@ class _LoginScreenContentState extends State<_LoginScreenContent> {
     }
   }
 
+  // Cached email regex for validation
+  static final _emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.read<LoginViewModel>();
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -116,93 +133,100 @@ class _LoginScreenContentState extends State<_LoginScreenContent> {
         ),
         child: Stack(
           children: [
-            // Decorative tech patterns
-            Positioned(
+            // Decorative tech patterns — static, never rebuilds
+            const Positioned(
               top: 100,
               right: -50,
-              child: CircleAvatar(
-                radius: 100,
-                backgroundColor: Colors.white.withValues(alpha: 0.2),
+              child: RepaintBoundary(
+                child: CircleAvatar(
+                  radius: 100,
+                  backgroundColor: Color(0x33FFFFFF),
+                ),
               ),
             ),
             Center(
               child: SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: Consumer<LoginViewModel>(
-                    builder: (context, viewModel, child) {
-                      return Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Logo
-                            Image.asset(
-                              "assets/images/logo.png",
-                              width: 250,
-                            ),
-                            const SizedBox(height: 40),
-                            const Text(
-                              "A Sight on Every Street",
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF1A2B47),
-                              ),
-                            ),
-                            const SizedBox(height: 30),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Logo — static, outside Consumer
+                        Image.asset(
+                          "assets/images/logo.png",
+                          width: 250,
+                        ),
+                        const SizedBox(height: 40),
+                        const Text(
+                          "A Sight on Every Street",
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF1A2B47),
+                          ),
+                        ),
+                        const SizedBox(height: 30),
 
-                            // Error Message Display
-                            if (viewModel.errorMessage != null)
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                margin: const EdgeInsets.only(bottom: 16),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.shade50,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.red.shade200),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.error_outline, color: Colors.red.shade700),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        viewModel.errorMessage!,
-                                        style: TextStyle(color: Colors.red.shade700),
-                                      ),
+                        // Error Message — only rebuilds when errorMessage changes
+                        Selector<LoginViewModel, String?>(
+                          selector: (_, vm) => vm.errorMessage,
+                          builder: (context, errorMessage, _) {
+                            if (errorMessage == null) return const SizedBox.shrink();
+                            return Container(
+                              padding: const EdgeInsets.all(12),
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.red.shade200),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.error_outline, color: Colors.red.shade700),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      errorMessage,
+                                      style: TextStyle(color: Colors.red.shade700),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
+                            );
+                          },
+                        ),
 
-                            // Email Field
-                            _buildTextField(
-                              controller: _emailController,
-                              icon: Icons.email_outlined,
-                              hint: "Email",
-                              keyboardType: TextInputType.emailAddress,
-                              onChanged: viewModel.setEmail,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your email';
-                                }
-                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                    .hasMatch(value)) {
-                                  return 'Please enter a valid email';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 15),
+                        // Email Field — static, uses controller not ViewModel
+                        _buildTextField(
+                          controller: _emailController,
+                          icon: Icons.email_outlined,
+                          hint: "Email",
+                          keyboardType: TextInputType.emailAddress,
+                          onChanged: viewModel.setEmail,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            if (!_emailRegex.hasMatch(value)) {
+                              return 'Please enter a valid email';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 15),
 
-                            // Password Field
-                            _buildTextField(
+                        // Password Field — only rebuilds when visibility changes
+                        Selector<LoginViewModel, bool>(
+                          selector: (_, vm) => vm.isPasswordVisible,
+                          builder: (context, isPasswordVisible, _) {
+                            return _buildTextField(
                               controller: _passwordController,
                               icon: Icons.lock_outline,
                               hint: "Password",
                               isPassword: true,
-                              isPasswordVisible: viewModel.isPasswordVisible,
+                              isPasswordVisible: isPasswordVisible,
                               onTogglePassword: viewModel.togglePasswordVisibility,
                               onChanged: viewModel.setPassword,
                               validator: (value) {
@@ -214,141 +238,151 @@ class _LoginScreenContentState extends State<_LoginScreenContent> {
                                 }
                                 return null;
                               },
-                            ),
+                            );
+                          },
+                        ),
 
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: viewModel.isLoading
-                                    ? null
-                                    : () => _handleForgotPassword(viewModel),
-                                child: const Text(
-                                  "Forgot Password?",
-                                  style: TextStyle(color: Colors.blueGrey),
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 10),
-
-                            // Primary Login Button
-                            Container(
-                              width: double.infinity,
-                              height: 55,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(15),
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF1A4D94), Color(0xFFF28C38)],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.blue.withValues(alpha: 0.3),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 5),
-                                  )
-                                ],
-                              ),
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
+                        // Forgot Password — only needs isLoading
+                        Selector<LoginViewModel, bool>(
+                          selector: (_, vm) => vm.isLoading,
+                          builder: (context, isLoading, _) {
+                            return Column(
+                              children: [
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: isLoading
+                                        ? null
+                                        : () => _handleForgotPassword(viewModel),
+                                    child: const Text(
+                                      "Forgot Password?",
+                                      style: TextStyle(color: Colors.blueGrey),
+                                    ),
                                   ),
                                 ),
-                                onPressed: viewModel.isLoading
-                                    ? null
-                                    : () => _handleLogin(viewModel),
-                                child: viewModel.isLoading
-                                    ? const SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2,
-                                        ),
+
+                                const SizedBox(height: 10),
+
+                                // Primary Login Button
+                                Container(
+                                  width: double.infinity,
+                                  height: 55,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(15),
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF1A4D94), Color(0xFFF28C38)],
+                                    ),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Color(0x4D2196F3),
+                                        blurRadius: 10,
+                                        offset: Offset(0, 5),
                                       )
-                                    : const Text(
-                                        "Log In",
+                                    ],
+                                  ),
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      shadowColor: Colors.transparent,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                    ),
+                                    onPressed: isLoading
+                                        ? null
+                                        : () => _handleLogin(viewModel),
+                                    child: isLoading
+                                        ? const SizedBox(
+                                            width: 24,
+                                            height: 24,
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white,
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : const Text(
+                                            "Log In",
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 25),
+
+                                // Divider with "OR"
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Divider(color: Colors.grey.shade400),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      child: Text(
+                                        "OR",
                                         style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18,
+                                          color: Colors.grey.shade600,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Divider(color: Colors.grey.shade400),
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 20),
+
+                                // Social Buttons
+                                _buildSocialButton(
+                                  icon: Icons.g_mobiledata,
+                                  text: "Continue with Google",
+                                  onPressed: isLoading
+                                      ? null
+                                      : () => _handleGoogleLogin(viewModel),
+                                ),
+                                const SizedBox(height: 12),
+                                _buildSocialButton(
+                                  icon: Icons.facebook,
+                                  text: "Continue with Facebook",
+                                  onPressed: isLoading
+                                      ? null
+                                      : () => _handleFacebookLogin(viewModel),
+                                ),
+
+                                const SizedBox(height: 30),
+
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text("Don't have an account? "),
+                                    GestureDetector(
+                                      onTap: isLoading
+                                          ? null
+                                          : () {
+                                              AppRouter.navigateTo(context, AppRouter.signup);
+                                            },
+                                      child: const Text(
+                                        "Sign Up",
+                                        style: TextStyle(
+                                          color: Colors.blue,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 25),
-
-                            // Divider with "OR"
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Divider(color: Colors.grey.shade400),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  child: Text(
-                                    "OR",
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w500,
                                     ),
-                                  ),
+                                  ],
                                 ),
-                                Expanded(
-                                  child: Divider(color: Colors.grey.shade400),
-                                ),
+                                const SizedBox(height: 20),
                               ],
-                            ),
-
-                            const SizedBox(height: 20),
-
-                            // Social Buttons
-                            _buildSocialButton(
-                              icon: Icons.g_mobiledata,
-                              text: "Continue with Google",
-                              onPressed: viewModel.isLoading
-                                  ? null
-                                  : () => _handleGoogleLogin(viewModel),
-                            ),
-                            const SizedBox(height: 12),
-                            _buildSocialButton(
-                              icon: Icons.facebook,
-                              text: "Continue with Facebook",
-                              onPressed: viewModel.isLoading
-                                  ? null
-                                  : () => _handleFacebookLogin(viewModel),
-                            ),
-
-                            const SizedBox(height: 30),
-
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text("Don't have an account? "),
-                                GestureDetector(
-                                  onTap: viewModel.isLoading
-                                      ? null
-                                      : () {
-                                          AppRouter.navigateTo(context, AppRouter.signup);
-                                        },
-                                  child: const Text(
-                                    "Sign Up",
-                                    style: TextStyle(
-                                      color: Colors.blue,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                          ],
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ],
+                    ),
                   ),
                 ),
               ),

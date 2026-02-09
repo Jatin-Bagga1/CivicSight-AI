@@ -16,6 +16,7 @@ class LoginViewModel extends ChangeNotifier {
   bool _isPasswordVisible = false;
   String? _errorMessage;
   UserModel? _user;
+  bool _needsProfileSetup = false;
 
   // Getters
   String get email => _email;
@@ -25,21 +26,15 @@ class LoginViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   UserModel? get user => _user;
   bool get isLoggedIn => _user != null;
+  bool get needsProfileSetup => _needsProfileSetup;
 
-  // Setters with validation - optimized to only notify when value changes
+  // Setters with validation - optimized to avoid unnecessary rebuilds
   void setEmail(String value) {
-    final trimmed = value.trim();
-    if (_email == trimmed) return;
-    _email = trimmed;
-    _clearError();
-    notifyListeners();
+    _email = value.trim();
   }
 
   void setPassword(String value) {
-    if (_password == value) return;
     _password = value;
-    _clearError();
-    notifyListeners();
   }
 
   void togglePasswordVisibility() {
@@ -49,9 +44,7 @@ class LoginViewModel extends ChangeNotifier {
   }
 
   void _clearError() {
-    if (_errorMessage != null) {
-      _errorMessage = null;
-    }
+    _errorMessage = null;
   }
 
   void _setError(String message) {
@@ -79,6 +72,7 @@ class LoginViewModel extends ChangeNotifier {
 
       if (result.success && result.user != null) {
         _user = result.user;
+        _needsProfileSetup = result.needsProfileSetup;
         HapticFeedback.lightImpact();
         _setLoading(false);
         return true;
@@ -134,6 +128,7 @@ class LoginViewModel extends ChangeNotifier {
 
       if (result.success && result.user != null) {
         _user = result.user;
+        _needsProfileSetup = result.needsProfileSetup;
         _setLoading(false);
         return true;
       } else {
@@ -160,6 +155,7 @@ class LoginViewModel extends ChangeNotifier {
 
       if (result.success && result.user != null) {
         _user = result.user;
+        _needsProfileSetup = result.needsProfileSetup;
         _setLoading(false);
         return true;
       } else {
@@ -186,6 +182,7 @@ class LoginViewModel extends ChangeNotifier {
 
       if (result.success && result.user != null) {
         _user = result.user;
+        _needsProfileSetup = result.needsProfileSetup;
         _setLoading(false);
         return true;
       } else {

@@ -32,14 +32,39 @@ void main() async {
   runApp(const CivicSightApp());
 }
 
-class CivicSightApp extends StatelessWidget {
+class CivicSightApp extends StatefulWidget {
   const CivicSightApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Check if user is already logged in to determine initial route
-    final bool isLoggedIn = AuthService().isLoggedIn;
+  State<CivicSightApp> createState() => _CivicSightAppState();
+}
 
+class _CivicSightAppState extends State<CivicSightApp> {
+  // Compute initial route once, not on every rebuild
+  late final String _initialRoute;
+
+  @override
+  void initState() {
+    super.initState();
+    final authService = AuthService();
+    if (!authService.isLoggedIn) {
+      _initialRoute = AppRouter.login;
+    } else if (authService.needsProfileSetup) {
+      _initialRoute = AppRouter.profileSetup;
+    } else {
+      _initialRoute = AppRouter.home;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Precache the logo image so it's ready before first paint
+    precacheImage(const AssetImage("assets/images/logo.png"), context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'CivicSight AI',
@@ -54,8 +79,8 @@ class CivicSightApp extends StatelessWidget {
           },
         ),
       ),
-      // Route to home if logged in, otherwise to login
-      initialRoute: isLoggedIn ? AppRouter.home : AppRouter.login,
+      // Route based on auth state and profile completeness
+      initialRoute: _initialRoute,
       onGenerateRoute: AppRouter.generateRoute,
     );
   }

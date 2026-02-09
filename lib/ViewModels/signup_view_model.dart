@@ -12,6 +12,7 @@ class SignUpViewModel extends ChangeNotifier {
   String _email = '';
   String _password = '';
   String _confirmPassword = '';
+  String _phone = '';
   UserRole? _selectedRole;
   
   // State
@@ -26,6 +27,7 @@ class SignUpViewModel extends ChangeNotifier {
   String get email => _email;
   String get password => _password;
   String get confirmPassword => _confirmPassword;
+  String get phone => _phone;
   UserRole? get selectedRole => _selectedRole;
   bool get isLoading => _isLoading;
   bool get isPasswordVisible => _isPasswordVisible;
@@ -33,35 +35,25 @@ class SignUpViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   UserModel? get user => _user;
 
-  // Setters - optimized to only notify when value changes
+  // Setters - optimized to avoid unnecessary rebuilds
   void setName(String value) {
-    final trimmed = value.trim();
-    if (_name == trimmed) return;
-    _name = trimmed;
-    _clearError();
-    notifyListeners();
+    _name = value.trim();
   }
 
   void setEmail(String value) {
-    final trimmed = value.trim();
-    if (_email == trimmed) return;
-    _email = trimmed;
-    _clearError();
-    notifyListeners();
+    _email = value.trim();
   }
 
   void setPassword(String value) {
-    if (_password == value) return;
     _password = value;
-    _clearError();
-    notifyListeners();
   }
 
   void setConfirmPassword(String value) {
-    if (_confirmPassword == value) return;
     _confirmPassword = value;
-    _clearError();
-    notifyListeners();
+  }
+
+  void setPhone(String value) {
+    _phone = value.trim();
   }
 
   void setRole(UserRole role) {
@@ -85,9 +77,7 @@ class SignUpViewModel extends ChangeNotifier {
   }
 
   void _clearError() {
-    if (_errorMessage != null) {
-      _errorMessage = null;
-    }
+    _errorMessage = null;
   }
 
   void _setError(String message) {
@@ -106,7 +96,7 @@ class SignUpViewModel extends ChangeNotifier {
 
     // Validate role selection
     if (_selectedRole == null) {
-      _setError('Please select your role (Civilian or Field Worker)');
+      _setError('Please select your role (Citizen or Field Worker)');
       return false;
     }
 
@@ -123,8 +113,9 @@ class SignUpViewModel extends ChangeNotifier {
       final result = await _authService.registerWithEmailPassword(
         email: _email,
         password: _password,
-        displayName: _name,
-        userRole: _selectedRole!,
+        fullName: _name,
+        role: _selectedRole!,
+        phone: _phone.isNotEmpty ? _phone : null,
       );
 
       if (result.success && result.user != null) {
@@ -211,6 +202,7 @@ class SignUpViewModel extends ChangeNotifier {
     _email = '';
     _password = '';
     _confirmPassword = '';
+    _phone = '';
     _selectedRole = null;
     _errorMessage = null;
     _isPasswordVisible = false;
@@ -218,8 +210,4 @@ class SignUpViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }
