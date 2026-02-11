@@ -48,6 +48,10 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Inject API Key from .env
+        val apiKey = getEnvValue("GOOGLE_MAPS_API_KEY")
+        resValue("string", "GOOGLE_MAPS_API_KEY", apiKey)
     }
 
     buildTypes {
@@ -57,6 +61,21 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
+
+// Helper to read .env
+fun getEnvValue(key: String): String {
+    val envFile = rootProject.file("../.env")
+    if (envFile.exists()) {
+        val lines = envFile.readLines()
+        for (line in lines) {
+            val parts = line.split("=")
+            if (parts.size >= 2 && parts[0].trim() == key) {
+                return parts[1].trim()
+            }
+        }
+    }
+    return ""
 }
 
 flutter {
