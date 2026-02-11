@@ -2,45 +2,63 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../Screens/login_screen.dart';
 import '../Screens/signup_screen.dart';
-import '../Screens/home_screen.dart';
+// import '../Screens/auth/forgot_password_screen.dart'; // File missing
 import '../Screens/profile_setup_screen.dart';
-import 'page_transitions.dart';
+import '../Screens/home_screen.dart';
+import '../Screens/map_screen.dart';
+import '../Screens/dashboard_screen.dart';
 
-/// Centralized routing with custom transitions
 class AppRouter {
-  // Route names
   static const String login = '/login';
   static const String signup = '/signup';
-  static const String home = '/home';
+  static const String forgotPassword = '/forgot-password';
   static const String profileSetup = '/profile-setup';
+  static const String home = '/home';
+  static const String map = '/map';
+  static const String dashboard = '/dashboard';
 
-  /// Generate route with appropriate transition
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case login:
-        return PageTransitions.fadeThrough(page: const LoginScreen());
-      
+        return MaterialPageRoute(builder: (_) => const LoginScreen());
       case signup:
-        return PageTransitions.slideRight(page: const SignUpScreen());
-      
-      case home:
-        return PageTransitions.scale(page: const HomeScreen());
-      
+        return MaterialPageRoute(builder: (_) => const SignUpScreen());
+      case forgotPassword:
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            appBar: AppBar(title: const Text('Forgot Password')),
+            body: const Center(child: Text('Feature coming soon')),
+          ),
+        );
       case profileSetup:
-        return PageTransitions.slideUp(page: const ProfileSetupScreen());
-      
+        return MaterialPageRoute(builder: (_) => const ProfileSetupScreen());
+      case home:
+        // Redirect home to dashboard
+        return MaterialPageRoute(builder: (_) => const DashboardScreen());
+      case dashboard:
+        return MaterialPageRoute(builder: (_) => const DashboardScreen());
+      case map:
+        return MaterialPageRoute(builder: (_) => const MapScreen());
       default:
-        return PageTransitions.fade(
-          page: Scaffold(
-            body: Center(
-              child: Text('No route defined for ${settings.name}'),
-            ),
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            body: Center(child: Text('No route defined for ${settings.name}')),
           ),
         );
     }
   }
 
-  /// Navigate with replacement (clears back stack)
+  /// Navigate to a route
+  static Future<T?> navigateTo<T>(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) async {
+    HapticFeedback.lightImpact();
+    return Navigator.pushNamed<T>(context, routeName, arguments: arguments);
+  }
+
+  /// Navigate and replace the current route
   static Future<void> navigateAndReplace(
     BuildContext context,
     String routeName, {
@@ -54,21 +72,7 @@ class AppRouter {
     );
   }
 
-  /// Navigate with push (adds to stack)
-  static Future<T?> navigateTo<T>(
-    BuildContext context,
-    String routeName, {
-    Object? arguments,
-  }) async {
-    HapticFeedback.lightImpact();
-    return Navigator.pushNamed<T>(
-      context,
-      routeName,
-      arguments: arguments,
-    );
-  }
-
-  /// Navigate and clear all previous routes
+  /// Navigate and remove all previous routes
   static Future<void> navigateAndClearAll(
     BuildContext context,
     String routeName, {
@@ -83,85 +87,9 @@ class AppRouter {
     );
   }
 
-  /// Go back with optional result
+  /// Go back
   static void goBack<T>(BuildContext context, [T? result]) {
     HapticFeedback.selectionClick();
     Navigator.pop(context, result);
   }
-
-  /// Navigate with custom transition
-  static Future<T?> navigateWithTransition<T>(
-    BuildContext context,
-    Widget page, {
-    TransitionType type = TransitionType.slideRight,
-  }) async {
-    HapticFeedback.lightImpact();
-    
-    late Route<T> route;
-    switch (type) {
-      case TransitionType.fade:
-        route = PageTransitions.fade<T>(page: page);
-        break;
-      case TransitionType.slideRight:
-        route = PageTransitions.slideRight<T>(page: page);
-        break;
-      case TransitionType.slideLeft:
-        route = PageTransitions.slideLeft<T>(page: page);
-        break;
-      case TransitionType.slideUp:
-        route = PageTransitions.slideUp<T>(page: page);
-        break;
-      case TransitionType.scale:
-        route = PageTransitions.scale<T>(page: page);
-        break;
-      case TransitionType.fadeThrough:
-        route = PageTransitions.fadeThrough<T>(page: page);
-        break;
-    }
-    
-    return Navigator.push<T>(context, route);
-  }
-
-  /// Replace with custom transition
-  static Future<T?> replaceWithTransition<T>(
-    BuildContext context,
-    Widget page, {
-    TransitionType type = TransitionType.fadeThrough,
-  }) async {
-    HapticFeedback.lightImpact();
-    
-    late Route<T> route;
-    switch (type) {
-      case TransitionType.fade:
-        route = PageTransitions.fade<T>(page: page);
-        break;
-      case TransitionType.slideRight:
-        route = PageTransitions.slideRight<T>(page: page);
-        break;
-      case TransitionType.slideLeft:
-        route = PageTransitions.slideLeft<T>(page: page);
-        break;
-      case TransitionType.slideUp:
-        route = PageTransitions.slideUp<T>(page: page);
-        break;
-      case TransitionType.scale:
-        route = PageTransitions.scale<T>(page: page);
-        break;
-      case TransitionType.fadeThrough:
-        route = PageTransitions.fadeThrough<T>(page: page);
-        break;
-    }
-    
-    return Navigator.pushReplacement<T, T>(context, route);
-  }
-}
-
-/// Transition types available
-enum TransitionType {
-  fade,
-  slideRight,
-  slideLeft,
-  slideUp,
-  scale,
-  fadeThrough,
 }

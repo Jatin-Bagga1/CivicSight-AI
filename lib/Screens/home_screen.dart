@@ -11,7 +11,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = AuthService().currentUser;
-    
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -98,10 +98,7 @@ class HomeScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // Logo
-                      Image.asset(
-                        "assets/images/logo.png",
-                        width: 200,
-                      ),
+                      Image.asset("assets/images/logo.png", width: 200),
                       const SizedBox(height: 30),
                       const Icon(
                         Icons.check_circle_outline,
@@ -160,11 +157,32 @@ class HomeScreen extends StatelessWidget {
                             const SizedBox(height: 8),
                             Text(
                               'This is a placeholder. The actual home screen features will be added soon.',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey.shade600,
                               ),
-                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 20),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                AppRouter.navigateTo(context, AppRouter.map);
+                              },
+                              icon: const Icon(Icons.map, color: Colors.white),
+                              label: const Text(
+                                'Open Map Dashboard',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1A4D94),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -214,4 +232,3 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-
