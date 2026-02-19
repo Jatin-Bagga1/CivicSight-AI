@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 import 'Services/auth_service.dart';
+import 'Services/theme_provider.dart';
+import 'Services/map_settings_provider.dart';
 import 'Utils/app_router.dart';
+import 'constants/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,7 +44,6 @@ class CivicSightApp extends StatefulWidget {
 }
 
 class _CivicSightAppState extends State<CivicSightApp> {
-  // Compute initial route once, not on every rebuild
   late final String _initialRoute;
 
   @override
@@ -59,29 +62,29 @@ class _CivicSightAppState extends State<CivicSightApp> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Precache the logo image so it's ready before first paint
     precacheImage(const AssetImage("assets/images/logo.png"), context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'CivicSight AI',
-      theme: ThemeData(
-        fontFamily: 'sans-serif',
-        // Optimize page transitions globally
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: {
-            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-            TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
-          },
-        ),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => MapSettingsProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'CivicSight AI',
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: themeProvider.effectiveThemeMode,
+            initialRoute: _initialRoute,
+            onGenerateRoute: AppRouter.generateRoute,
+          );
+        },
       ),
-      // Route based on auth state and profile completeness
-      initialRoute: _initialRoute,
-      onGenerateRoute: AppRouter.generateRoute,
     );
   }
 }
