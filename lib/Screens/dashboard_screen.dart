@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../Services/auth_service.dart';
 import '../Models/user_model.dart';
 import '../Utils/app_router.dart';
+import '../constants/colors.dart';
 import 'reporting_screen.dart';
 import 'map_screen.dart';
 import 'my_reports_screen.dart';
@@ -28,16 +29,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final user = AuthService().currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final navTheme = Theme.of(context).bottomNavigationBarTheme;
 
     return Scaffold(
       body: Container(
         width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFD6E4F0), Color(0xFFF9D1B7)],
-          ),
+        decoration: BoxDecoration(
+          gradient: isDark ? AppColors.darkGradient : AppColors.lightGradient,
         ),
         child: SafeArea(
           child: Column(
@@ -58,16 +57,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           'Welcome back,',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey.shade600,
+                            color: isDark
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade600,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           user?.fullName ?? 'User',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A2B47),
+                            color: isDark
+                                ? AppColors.darkText2
+                                : AppColors.darkText,
                           ),
                         ),
                         if (user != null)
@@ -79,8 +82,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: user.role == UserRole.worker
-                                  ? const Color(0xFF1A4D94)
-                                  : const Color(0xFFF28C38),
+                                  ? AppColors.primaryBlue
+                                  : AppColors.primaryOrange,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -98,9 +101,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     IconButton(
                       onPressed: () => _showLogoutDialog(context),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.logout_rounded,
-                        color: Color(0xFF1A4D94),
+                        color: isDark
+                            ? AppColors.darkText2
+                            : AppColors.primaryBlue,
                         size: 26,
                       ),
                     ),
@@ -117,13 +122,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: navTheme.backgroundColor,
           boxShadow: [
             BoxShadow(
-              color: Color(0x1A000000),
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
               blurRadius: 10,
-              offset: Offset(0, -2),
+              offset: const Offset(0, -2),
             ),
           ],
         ),
@@ -134,9 +139,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             setState(() => _currentIndex = index);
           },
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF1A4D94),
-          unselectedItemColor: Colors.grey.shade400,
+          backgroundColor: navTheme.backgroundColor,
+          selectedItemColor: navTheme.selectedItemColor,
+          unselectedItemColor: navTheme.unselectedItemColor,
           selectedFontSize: 12,
           unselectedFontSize: 12,
           elevation: 0,
@@ -181,7 +186,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1A4D94),
+              backgroundColor: AppColors.primaryBlue,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
