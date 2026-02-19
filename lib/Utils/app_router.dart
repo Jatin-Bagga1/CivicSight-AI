@@ -16,7 +16,7 @@ class AppRouter {
   static const String home = '/home';
   static const String map = '/map';
   static const String dashboard = '/dashboard';
-
+  
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case login:
