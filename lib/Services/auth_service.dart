@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Models/user_model.dart' as models;
+import 'supabase_service.dart';
 
 /// Result class for authentication operations
 class AuthResult {
@@ -19,7 +19,10 @@ class AuthResult {
     this.needsProfileSetup = false,
   });
 
-  factory AuthResult.success(models.UserModel user, {bool needsProfileSetup = false}) {
+  factory AuthResult.success(
+    models.UserModel user, {
+    bool needsProfileSetup = false,
+  }) {
     return AuthResult(
       success: true,
       user: user,
@@ -58,7 +61,7 @@ class AuthService {
   AuthService._internal();
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SupabaseService _supabase = SupabaseService();
   models.UserModel? _currentUser;
 
   // SharedPreferences keys
@@ -127,29 +130,21 @@ class AuthService {
     }
   }
 
-  /// Update last activity timestamp in both SharedPreferences and Firestore
+  /// Update last activity timestamp in both SharedPreferences and Supabase
   Future<void> _updateLastActivity() async {
     try {
       final now = DateTime.now();
-      
-      // Run SharedPreferences and Firestore updates in parallel
+
+      // Run SharedPreferences and Supabase updates in parallel
       final futures = <Future>[
-        SharedPreferences.getInstance().then((prefs) =>
-          prefs.setInt(_lastActivityKey, now.millisecondsSinceEpoch),
+        SharedPreferences.getInstance().then(
+          (prefs) => prefs.setInt(_lastActivityKey, now.millisecondsSinceEpoch),
         ),
       ];
 
-      // Update Firestore if user is logged in
+      // Update Supabase if user is logged in
       if (_currentUser != null) {
-        futures.add(
-          _firestore
-              .collection('users')
-              .doc(_currentUser!.uid)
-              .update({
-                'lastLoginAt': now,
-                'updatedAt': now,
-              }),
-        );
+        futures.add(_supabase.updateLastLogin(_currentUser!.uid));
       }
 
       await Future.wait(futures);
@@ -158,31 +153,25 @@ class AuthService {
     }
   }
 
-  /// Check if user exists in Firestore, create if not, return UserModel
+  /// Check if user exists in Supabase, create if not, return UserModel
   Future<models.UserModel> _getOrCreateFirestoreUser(User firebaseUser) async {
-    final userDoc = await _firestore
-        .collection('users')
-        .doc(firebaseUser.uid)
-        .get();
+    final existing = await _supabase.getUser(firebaseUser.uid);
 
-    if (userDoc.exists) {
+    if (existing != null) {
       // User exists - return existing profile
-      return models.UserModel.fromFirestore(userDoc.data()!);
+      return existing;
     } else {
       // User does NOT exist - create new profile with basic info
       final newUser = _userModelFromFirebaseUser(firebaseUser);
 
-      // Save to Firestore
-      await _firestore
-          .collection('users')
-          .doc(firebaseUser.uid)
-          .set(newUser.toFirestore());
+      // Save to Supabase
+      await _supabase.upsertUser(newUser);
 
       return newUser;
     }
   }
 
-  /// Update user profile in Firestore (called from ProfileSetupScreen)
+  /// Update user profile in Supabase (called from ProfileSetupScreen)
   Future<AuthResult> updateUserProfile({
     required String fullName,
     required models.UserRole role,
@@ -199,16 +188,12 @@ class AuthService {
 
       final now = DateTime.now();
 
-      // Update Firestore document
-      await _firestore
-          .collection('users')
-          .doc(_currentUser!.uid)
-          .update({
-            'fullName': fullName.trim(),
-            'role': role.name,
-            'phone': phone?.trim(),
-            'updatedAt': now,
-          });
+      // Update Supabase row
+      await _supabase.updateUser(_currentUser!.uid, {
+        'full_name': fullName.trim(),
+        'role': role.name,
+        'phone': phone?.trim(),
+      });
 
       // Update local user model
       _currentUser = _currentUser!.copyWith(
@@ -382,7 +367,7 @@ class AuthService {
         await firebaseUser.updateDisplayName(fullName);
         await firebaseUser.reload();
 
-        // Create user profile in Firestore with full details
+        // Create user profile in Supabase with full details
         final userModel = _userModelFromFirebaseUser(
           firebaseUser,
           role: role,
@@ -390,11 +375,8 @@ class AuthService {
           phone: phone,
         );
 
-        // Save to Firestore (use set to create document with Firebase UID as doc ID)
-        await _firestore
-            .collection('users')
-            .doc(firebaseUser.uid)
-            .set(userModel.toFirestore());
+        // Save to Supabase
+        await _supabase.upsertUser(userModel);
 
         // Update last activity
         await _updateLastActivity();
