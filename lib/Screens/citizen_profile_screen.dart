@@ -499,5 +499,9 @@ class _SaveButton extends StatelessWidget {
         backgroundColor: success ? AppColors.success : AppColors.error,
       ),
     );
+
+    if (success) {
+      Navigator.pop(context);
+    }
   }
 }
