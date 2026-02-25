@@ -63,13 +63,14 @@ class SupabaseService {
     return response;
   }
 
-  /// Fetch all reports for a given user, newest first.
+  /// Fetch all reports for a given citizen, newest first.
+  /// Includes report_locations and report_images via joins.
   Future<List<Map<String, dynamic>>> getUserReports(String uid) async {
     final response = await _client
         .from('reports')
-        .select()
-        .eq('user_id', uid)
-        .order('created_at', ascending: false);
+        .select('*, report_locations(*), report_images(*)')
+        .eq('citizen_id', uid)
+        .order('reported_at', ascending: false);
 
     return List<Map<String, dynamic>>.from(response);
   }
@@ -77,6 +78,17 @@ class SupabaseService {
   /// Update report status.
   Future<void> updateReportStatus(String reportId, String status) async {
     await _client.from('reports').update({'status': status}).eq('id', reportId);
+  }
+
+  /// Fetch all reports with locations (for map pins).
+  Future<List<Map<String, dynamic>>> getAllReportsWithLocations() async {
+    final response = await _client
+        .from('reports')
+        .select('*, report_locations(*), report_images(*)')
+        .order('reported_at', ascending: false)
+        .limit(200);
+
+    return List<Map<String, dynamic>>.from(response);
   }
 
   // ════════════════════════════════════════════

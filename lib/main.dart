@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'Services/auth_service.dart';
 import 'Services/theme_provider.dart';
 import 'Services/map_settings_provider.dart';
@@ -12,6 +13,9 @@ import 'constants/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  await dotenv.load(fileName: "assets/.env");
 
   // Initialize Firebase
   await Firebase.initializeApp();
