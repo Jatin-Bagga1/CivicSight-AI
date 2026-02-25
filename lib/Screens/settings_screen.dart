@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../Services/auth_service.dart';
 import '../Services/theme_provider.dart';
 import '../Services/map_settings_provider.dart';
+import '../Services/accent_color_provider.dart';
 import '../Models/user_model.dart';
 import '../Utils/app_router.dart';
 import '../constants/colors.dart';
@@ -16,6 +17,7 @@ class SettingsScreen extends StatelessWidget {
     final user = AuthService().currentUser;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final accent = context.watch<AccentColorProvider>().color;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -23,7 +25,7 @@ class SettingsScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ─── Profile Card ───
-          _ProfileCard(user: user, isDark: isDark),
+          _ProfileCard(user: user, isDark: isDark, accent: accent),
           const SizedBox(height: 20),
 
           // ─── Appearance ───
@@ -195,23 +197,6 @@ class SettingsScreen extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_right, size: 20),
                 onTap: () => _showLogoutDialog(context),
               ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(
-                  Icons.delete_forever,
-                  color: AppColors.error,
-                ),
-                title: const Text(
-                  'Delete Account',
-                  style: TextStyle(color: AppColors.error),
-                ),
-                trailing: const Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: AppColors.error,
-                ),
-                onTap: () => _showDeleteDialog(context),
-              ),
             ],
           ),
           const SizedBox(height: 40),
@@ -266,37 +251,6 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  static void _showDeleteDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: const Text('Delete Account'),
-        content: const Text(
-          'This action is permanent and cannot be undone. All your data will be deleted.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _showComingSoon(ctx, 'Account deletion');
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // ─── Profile Card ───
@@ -304,8 +258,9 @@ class SettingsScreen extends StatelessWidget {
 class _ProfileCard extends StatelessWidget {
   final UserModel? user;
   final bool isDark;
+  final Color accent;
 
-  const _ProfileCard({required this.user, required this.isDark});
+  const _ProfileCard({required this.user, required this.isDark, required this.accent});
 
   @override
   Widget build(BuildContext context) {
@@ -333,7 +288,7 @@ class _ProfileCard extends StatelessWidget {
           // Avatar
           CircleAvatar(
             radius: 30,
-            backgroundColor: AppColors.primaryBlue,
+            backgroundColor: accent,
             child: Text(
               initials,
               style: const TextStyle(
@@ -395,8 +350,13 @@ class _ProfileCard extends StatelessWidget {
           ),
           // Edit
           IconButton(
-            onPressed: () =>
-                SettingsScreen._showComingSoon(context, 'Edit Profile'),
+            onPressed: () async {
+              await AppRouter.navigateTo(context, AppRouter.citizenProfile);
+              // Refresh accent colour when returning from profile screen
+              if (context.mounted) {
+                context.read<AccentColorProvider>().refresh();
+              }
+            },
             icon: Icon(
               Icons.edit_outlined,
               color: isDark ? Colors.grey.shade400 : AppColors.primaryBlue,

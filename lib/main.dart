@@ -1,18 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'Services/auth_service.dart';
 import 'Services/theme_provider.dart';
 import 'Services/map_settings_provider.dart';
+import 'Services/accent_color_provider.dart';
 import 'Utils/app_router.dart';
 import 'constants/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Load environment variables
+  await dotenv.load(fileName: "assets/.env");
+
   // Initialize Firebase
   await Firebase.initializeApp();
+
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: 'https://lcyryfzfiduslebpffje.supabase.co', 
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjeXJ5ZnpmaWR1c2xlYnBmZmplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MzQ1NTYsImV4cCI6MjA4NzExMDU1Nn0.-xfC_wtwXYRdc4MCBb6VfSjos2pPiE_xo31YCF1_vqg',
+  );
 
   // Initialize Auth Service and restore session if exists
   await AuthService().initialize();
@@ -71,6 +84,7 @@ class _CivicSightAppState extends State<CivicSightApp> {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => MapSettingsProvider()),
+        ChangeNotifierProvider(create: (_) => AccentColorProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {

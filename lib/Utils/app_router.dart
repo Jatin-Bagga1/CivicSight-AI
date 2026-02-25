@@ -7,6 +7,7 @@ import '../Screens/profile_setup_screen.dart';
 import '../Screens/home_screen.dart';
 import '../Screens/map_screen.dart';
 import '../Screens/dashboard_screen.dart';
+import '../Screens/citizen_profile_screen.dart';
 
 class AppRouter {
   static const String login = '/login';
@@ -16,7 +17,8 @@ class AppRouter {
   static const String home = '/home';
   static const String map = '/map';
   static const String dashboard = '/dashboard';
-
+  static const String citizenProfile = '/citizen-profile';
+  
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case login:
@@ -39,6 +41,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const DashboardScreen());
       case map:
         return MaterialPageRoute(builder: (_) => const MapScreen());
+      case citizenProfile:
+        return MaterialPageRoute(builder: (_) => const CitizenProfileScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

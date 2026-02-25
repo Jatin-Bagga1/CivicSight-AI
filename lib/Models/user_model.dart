@@ -1,5 +1,5 @@
 /// User model representing authenticated user data
-/// Database schema: users collection in Firestore
+/// Database schema: users table in Supabase
 class UserModel {
   /// Firebase UID - Primary Key (document ID in Firestore)
   final String uid;
@@ -47,6 +47,28 @@ class UserModel {
     required this.authProvider,
   });
 
+  /// Create UserModel from Supabase row (snake_case columns)
+  factory UserModel.fromSupabase(Map<String, dynamic> data) {
+    return UserModel(
+      uid: data['uid'] ?? '',
+      role: UserRole.fromString(data['role'] ?? 'citizen'),
+      fullName: data['full_name'] ?? '',
+      email: data['email'] ?? '',
+      phone: data['phone'],
+      status: UserStatus.fromString(data['status'] ?? 'active'),
+      createdAt: (data['created_at'] != null)
+          ? DateTime.parse(data['created_at'])
+          : DateTime.now(),
+      updatedAt: (data['updated_at'] != null)
+          ? DateTime.parse(data['updated_at'])
+          : DateTime.now(),
+      lastLoginAt: (data['last_login_at'] != null)
+          ? DateTime.parse(data['last_login_at'])
+          : null,
+      authProvider: AuthProvider.fromString(data['auth_provider'] ?? 'email'),
+    );
+  }
+
   /// Create UserModel from Firestore document
   factory UserModel.fromFirestore(Map<String, dynamic> data) {
     return UserModel(
@@ -65,8 +87,7 @@ class UserModel {
       lastLoginAt: (data['lastLoginAt'] != null)
           ? _parseDateTime(data['lastLoginAt'])
           : null,
-      authProvider:
-          AuthProvider.fromString(data['authProvider'] ?? 'email'),
+      authProvider: AuthProvider.fromString(data['authProvider'] ?? 'email'),
     );
   }
 
@@ -88,9 +109,24 @@ class UserModel {
       lastLoginAt: (json['lastLoginAt'] != null)
           ? DateTime.parse(json['lastLoginAt'])
           : null,
-      authProvider:
-          AuthProvider.fromString(json['authProvider'] ?? 'email'),
+      authProvider: AuthProvider.fromString(json['authProvider'] ?? 'email'),
     );
+  }
+
+  /// Convert UserModel to Supabase row (snake_case columns)
+  Map<String, dynamic> toSupabase() {
+    return {
+      'uid': uid,
+      'role': role.name,
+      'full_name': fullName,
+      'email': email,
+      'phone': phone,
+      'status': status.name,
+      'auth_provider': authProvider.name,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+      'last_login_at': lastLoginAt?.toUtc().toIso8601String(),
+    };
   }
 
   /// Convert UserModel to Firestore map
@@ -191,7 +227,8 @@ enum UserRole {
 
   static UserRole fromString(String value) {
     return UserRole.values.firstWhere(
-      (e) => e.name == value.toLowerCase() ||
+      (e) =>
+          e.name == value.toLowerCase() ||
           (value.toLowerCase() == 'civilian' && e == UserRole.citizen) ||
           (value.toLowerCase() == 'field_worker' && e == UserRole.worker),
       orElse: () => UserRole.citizen,
