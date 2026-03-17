@@ -1,16 +1,13 @@
-# civic_sight_ai
+# CivicSight AI
 
-A new Flutter project.
+AI-powered civic issue reporting and management platform.
 
-## Getting Started
+## Tech Stack
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+| Component | Technologies |
+|-----------|-------------|
+| Mobile | Flutter, Dart, Firebase Auth, Google Maps, Provider |
+| Admin | Next.js, TypeScript, Tailwind CSS, shadcn/ui, Recharts |
+| Database | Supabase (PostgreSQL) |
+| AI | Google Gemini (via Edge Functions) |
+| Storage | Firebase Storage |
