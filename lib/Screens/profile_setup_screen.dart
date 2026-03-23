@@ -71,7 +71,10 @@ class _ProfileSetupContentState extends State<_ProfileSetupContent> {
       if (success) {
         _showSnackBar('Profile saved successfully!');
         if (mounted) {
-          AppRouter.navigateAndClearAll(context, AppRouter.home);
+          final destination = viewModel.selectedRole == UserRole.worker
+              ? AppRouter.workerDashboard
+              : AppRouter.home;
+          AppRouter.navigateAndClearAll(context, destination);
         }
       } else if (viewModel.errorMessage != null) {
         _showSnackBar(viewModel.errorMessage!, isError: true);

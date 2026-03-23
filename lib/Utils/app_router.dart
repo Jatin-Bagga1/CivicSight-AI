@@ -4,10 +4,12 @@ import '../Screens/login_screen.dart';
 import '../Screens/signup_screen.dart';
 // import '../Screens/auth/forgot_password_screen.dart'; // File missing
 import '../Screens/profile_setup_screen.dart';
-import '../Screens/home_screen.dart';
 import '../Screens/map_screen.dart';
 import '../Screens/dashboard_screen.dart';
 import '../Screens/citizen_profile_screen.dart';
+
+import '../Screens/Worker/worker_dashboard_screen.dart';
+import '../Screens/Worker/task_detail_screen.dart';
 
 class AppRouter {
   static const String login = '/login';
@@ -18,6 +20,8 @@ class AppRouter {
   static const String map = '/map';
   static const String dashboard = '/dashboard';
   static const String citizenProfile = '/citizen-profile';
+  static const String workerDashboard = '/worker-dashboard';
+  static const String taskDetail = '/task-detail';
   
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -43,6 +47,14 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const MapScreen());
       case citizenProfile:
         return MaterialPageRoute(builder: (_) => const CitizenProfileScreen());
+      case workerDashboard:
+        return MaterialPageRoute(builder: (_) => const WorkerDashboardScreen());
+      case taskDetail:
+        // Accept reportId as argument
+        final reportId = settings.arguments as String?;
+        return MaterialPageRoute(
+          builder: (_) => TaskDetailScreen(reportId: reportId ?? ''),
+        );
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

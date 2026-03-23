@@ -68,7 +68,12 @@ class _CivicSightAppState extends State<CivicSightApp> {
     } else if (authService.needsProfileSetup) {
       _initialRoute = AppRouter.profileSetup;
     } else {
-      _initialRoute = AppRouter.home;
+      // Role-based routing
+      if (authService.currentUser?.role.name == 'worker') {
+        _initialRoute = AppRouter.workerDashboard;
+      } else {
+        _initialRoute = AppRouter.home;
+      }
     }
   }
 

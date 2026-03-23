@@ -56,7 +56,11 @@ class _LoginScreenContentState extends State<_LoginScreenContent> {
           if (viewModel.needsProfileSetup) {
             AppRouter.navigateAndReplace(context, AppRouter.profileSetup);
           } else {
-            AppRouter.navigateAndReplace(context, AppRouter.home);
+            if (viewModel.user?.role.name == 'worker') {
+              AppRouter.navigateAndReplace(context, AppRouter.workerDashboard);
+            } else {
+              AppRouter.navigateAndReplace(context, AppRouter.home);
+            }
           }
         }
       } else if (viewModel.errorMessage != null) {
@@ -88,7 +92,11 @@ class _LoginScreenContentState extends State<_LoginScreenContent> {
         if (viewModel.needsProfileSetup) {
           AppRouter.navigateAndReplace(context, AppRouter.profileSetup);
         } else {
-          AppRouter.navigateAndReplace(context, AppRouter.home);
+          if (viewModel.user?.role.name == 'worker') {
+            AppRouter.navigateAndReplace(context, AppRouter.workerDashboard);
+          } else {
+            AppRouter.navigateAndReplace(context, AppRouter.home);
+          }
         }
       }
     } else if (viewModel.errorMessage != null) {
@@ -105,7 +113,11 @@ class _LoginScreenContentState extends State<_LoginScreenContent> {
         if (viewModel.needsProfileSetup) {
           AppRouter.navigateAndReplace(context, AppRouter.profileSetup);
         } else {
-          AppRouter.navigateAndReplace(context, AppRouter.home);
+          if (viewModel.user?.role.name == 'worker') {
+            AppRouter.navigateAndReplace(context, AppRouter.workerDashboard);
+          } else {
+            AppRouter.navigateAndReplace(context, AppRouter.home);
+          }
         }
       }
     } else if (viewModel.errorMessage != null) {

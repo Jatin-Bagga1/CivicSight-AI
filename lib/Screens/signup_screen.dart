@@ -66,7 +66,10 @@ class _SignUpScreenContentState extends State<_SignUpScreenContent> {
       if (success) {
         _showSnackBar('Account created successfully!');
         if (mounted) {
-          AppRouter.navigateAndReplace(context, AppRouter.home);
+          final destination = viewModel.selectedRole == UserRole.worker
+              ? AppRouter.workerDashboard
+              : AppRouter.home;
+          AppRouter.navigateAndReplace(context, destination);
         }
       } else if (viewModel.errorMessage != null) {
         _showSnackBar(viewModel.errorMessage!, isError: true);
