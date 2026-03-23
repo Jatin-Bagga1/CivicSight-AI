@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Civic Sight AI</string>
+    <string name="facebook_app_id">2672197586492548</string>
+    <string name="facebook_client_token">dd6f30c03f1434fb231394c6f2590532</string>
+    <string name="fb_login_protocol_scheme">fb2672197586492548</string>
+</resources>
