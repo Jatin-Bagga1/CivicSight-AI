@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Models/user_model.dart' as models;
 import 'supabase_service.dart';
@@ -155,11 +157,20 @@ class AuthService {
 
   /// Check if user exists in Supabase, create if not, return UserModel
   Future<models.UserModel> _getOrCreateFirestoreUser(User firebaseUser) async {
+    final result = await _getOrCreateUser(firebaseUser);
+    return result.user;
+  }
+
+  /// Check if user exists in Supabase, create if not.
+  /// Returns the user and whether they were newly created.
+  Future<({models.UserModel user, bool isNewUser})> _getOrCreateUser(
+    User firebaseUser,
+  ) async {
     final existing = await _supabase.getUser(firebaseUser.uid);
 
     if (existing != null) {
       // User exists - return existing profile
-      return existing;
+      return (user: existing, isNewUser: false);
     } else {
       // User does NOT exist - create new profile with basic info
       final newUser = _userModelFromFirebaseUser(firebaseUser);
@@ -167,7 +178,7 @@ class AuthService {
       // Save to Supabase
       await _supabase.upsertUser(newUser);
 
-      return newUser;
+      return (user: newUser, isNewUser: true);
     }
   }
 
@@ -431,34 +442,143 @@ class AuthService {
     }
   }
 
-  /// Login with Google - Placeholder for future implementation
+  /// Login with Google
   Future<AuthResult> loginWithGoogle() async {
-    // TODO: Implement Google Sign-In
-    // final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-    // final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
-    // final credential = GoogleAuthProvider.credential(
-    //   accessToken: googleAuth?.accessToken,
-    //   idToken: googleAuth?.idToken,
-    // );
-    // return await FirebaseAuth.instance.signInWithCredential(credential);
+    try {
+      // Trigger the Google Sign-In flow
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
-    return AuthResult.failure(
-      'Google Sign-In not implemented yet',
-      errorType: AuthErrorType.unknown,
-    );
+      if (googleUser == null) {
+        // User cancelled the sign-in flow
+        return AuthResult.failure(
+          'Google sign-in was cancelled',
+          errorType: AuthErrorType.unknown,
+        );
+      }
+
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      // Create a new credential for Firebase
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Sign in to Firebase with the Google credential
+      final UserCredential userCredential =
+          await _firebaseAuth.signInWithCredential(credential);
+
+      if (userCredential.user != null) {
+        // Get or create user profile in Supabase
+        final result = await _getOrCreateUser(userCredential.user!);
+        _currentUser = result.user;
+
+        // Update last activity
+        await _updateLastActivity();
+
+        // New social login users always need profile setup (to pick role, phone)
+        // Returning users only need setup if profile is incomplete
+        final needsSetup =
+            result.isNewUser || !_currentUser!.isProfileComplete;
+        return AuthResult.success(_currentUser!, needsProfileSetup: needsSetup);
+      }
+
+      return AuthResult.failure('Google sign-in failed. Please try again.');
+    } on FirebaseAuthException catch (e) {
+      return _handleFirebaseAuthError(e);
+    } catch (e) {
+      return AuthResult.failure(
+        'Google sign-in failed: ${e.toString()}',
+        errorType: AuthErrorType.unknown,
+      );
+    }
   }
 
-  /// Login with Facebook - Placeholder for future implementation
+  /// Login with Facebook
   Future<AuthResult> loginWithFacebook() async {
-    // TODO: Implement Facebook Sign-In
-    // final LoginResult loginResult = await FacebookAuth.instance.login();
-    // final OAuthCredential credential = FacebookAuthProvider.credential(loginResult.accessToken!.token);
-    // return await FirebaseAuth.instance.signInWithCredential(credential);
+    try {
+      // Trigger the native Facebook Sign-In flow
+      final LoginResult loginResult = await FacebookAuth.instance.login(
+        permissions: ['email', 'public_profile'],
+      );
 
-    return AuthResult.failure(
-      'Facebook Sign-In not implemented yet',
-      errorType: AuthErrorType.unknown,
-    );
+      print('Facebook login status: ${loginResult.status}');
+      if (loginResult.message != null) {
+        print('Facebook login message: ${loginResult.message}');
+      }
+
+      switch (loginResult.status) {
+        case LoginStatus.success:
+          final AccessToken accessToken = loginResult.accessToken!;
+          print('Facebook access token obtained successfully');
+
+          // Create a credential for Firebase using the Facebook access token
+          final OAuthCredential credential =
+              FacebookAuthProvider.credential(accessToken.tokenString);
+
+          // Sign in to Firebase with the Facebook credential
+          final UserCredential userCredential =
+              await _firebaseAuth.signInWithCredential(credential);
+          print('Firebase sign-in successful: ${userCredential.user?.uid}');
+
+          if (userCredential.user != null) {
+            final firebaseUser = userCredential.user!;
+            print('Firebase user email: ${firebaseUser.email}');
+            print('Firebase user displayName: ${firebaseUser.displayName}');
+            print('Firebase providers: ${firebaseUser.providerData.map((p) => p.providerId).toList()}');
+
+            // Get or create user profile in Supabase
+            final result = await _getOrCreateUser(firebaseUser);
+            _currentUser = result.user;
+            print('Supabase user created/fetched. isNewUser: ${result.isNewUser}');
+
+            // Update last activity
+            await _updateLastActivity();
+
+            // New social login users always need profile setup (to pick role, phone)
+            // Returning users only need setup if profile is incomplete
+            final needsSetup =
+                result.isNewUser || !_currentUser!.isProfileComplete;
+            return AuthResult.success(
+              _currentUser!,
+              needsProfileSetup: needsSetup,
+            );
+          }
+
+          return AuthResult.failure(
+            'Facebook sign-in failed. Please try again.',
+          );
+
+        case LoginStatus.cancelled:
+          return AuthResult.failure(
+            'Facebook sign-in was cancelled',
+            errorType: AuthErrorType.unknown,
+          );
+
+        case LoginStatus.failed:
+          return AuthResult.failure(
+            loginResult.message ?? 'Facebook sign-in failed',
+            errorType: AuthErrorType.unknown,
+          );
+
+        case LoginStatus.operationInProgress:
+          return AuthResult.failure(
+            'A sign-in operation is already in progress',
+            errorType: AuthErrorType.unknown,
+          );
+      }
+    } on FirebaseAuthException catch (e) {
+      print('Facebook login FirebaseAuthException: ${e.code} - ${e.message}');
+      return _handleFirebaseAuthError(e);
+    } catch (e) {
+      print('Facebook login error: $e');
+      return AuthResult.failure(
+        'Facebook sign-in failed: ${e.toString()}',
+        errorType: AuthErrorType.unknown,
+      );
+    }
   }
 
   /// Login with Microsoft - Placeholder for future implementation
@@ -494,6 +614,14 @@ class AuthService {
   /// Logout current user
   Future<void> logout() async {
     try {
+      // Sign out from social providers
+      try {
+        await GoogleSignIn().signOut();
+      } catch (_) {}
+      try {
+        await FacebookAuth.instance.logOut();
+      } catch (_) {}
+
       // Sign out from Firebase
       await _firebaseAuth.signOut();
 
