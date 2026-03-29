@@ -340,13 +340,7 @@ class _WorkerDashboardContentState extends State<_WorkerDashboardContent> {
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkCard : Colors.white,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
+                boxShadow: AppColors.cardShadow(isDark),
               ),
               child: _buildTaskList(vm, isDark),
             ),
@@ -571,7 +565,7 @@ class _WorkerDashboardContentState extends State<_WorkerDashboardContent> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppColors.radiusSm),
         border: Border.all(color: color.withOpacity(0.35)),
       ),
       child: Column(
@@ -644,14 +638,8 @@ class _WorkerDashboardContentState extends State<_WorkerDashboardContent> {
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkCard : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(AppColors.radius),
+          boxShadow: AppColors.cardShadow(isDark),
           border: Border.all(
             color: (status == 'resolved' || status == 'completed')
                 ? AppColors.success.withOpacity(0.5)
@@ -667,7 +655,7 @@ class _WorkerDashboardContentState extends State<_WorkerDashboardContent> {
               Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(AppColors.radius)),
                     child: Image.network(
                       imageUrl,
                       width: double.infinity,
@@ -821,7 +809,7 @@ class _WorkerDashboardContentState extends State<_WorkerDashboardContent> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: _statusColor(status),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppColors.radiusSm),
       ),
       child: Text(
         status.replaceAll('_', ' ').toUpperCase(),
@@ -837,8 +825,8 @@ class _WorkerDashboardContentState extends State<_WorkerDashboardContent> {
   void _showShiftMenu(BuildContext context, WorkerDashboardViewModel vm) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppColors.radius)),
       ),
       builder: (_) => SafeArea(
         child: Column(
@@ -883,7 +871,8 @@ class _WorkerDashboardContentState extends State<_WorkerDashboardContent> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppColors.radius)),
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
@@ -895,7 +884,7 @@ class _WorkerDashboardContentState extends State<_WorkerDashboardContent> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryBlue,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppColors.radiusSm),
               ),
             ),
             onPressed: () async {

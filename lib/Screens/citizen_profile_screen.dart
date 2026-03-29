@@ -262,11 +262,11 @@ class _StyledField extends StatelessWidget {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppColors.radiusSm),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppColors.radiusSm),
           borderSide: BorderSide(
             color: isDark
                 ? Colors.grey.shade700
@@ -274,7 +274,7 @@ class _StyledField extends StatelessWidget {
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppColors.radiusSm),
           borderSide: const BorderSide(
             color: AppColors.primaryBlue,
             width: 1.5,
@@ -306,7 +306,7 @@ class _InfoTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppColors.radiusSm),
         border: Border.all(
           color: isDark ? Colors.grey.shade700 : Colors.grey.shade200,
         ),
@@ -382,7 +382,7 @@ class _ColorPickerRowState extends State<_ColorPickerRow> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: widget.isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppColors.radiusSm),
         border: Border.all(
           color: widget.isDark ? Colors.grey.shade700 : Colors.grey.shade300,
         ),
@@ -446,7 +446,7 @@ class _SaveButton extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: AppColors.buttonGradient,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppColors.radius),
         ),
         child: ElevatedButton(
           onPressed: vm.saving ? null : () => _onSave(context),
@@ -454,7 +454,7 @@ class _SaveButton extends StatelessWidget {
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppColors.radius),
             ),
           ),
           child: vm.saving
@@ -495,7 +495,7 @@ class _SaveButton extends StatelessWidget {
         ),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppColors.radiusSm)),
         backgroundColor: success ? AppColors.success : AppColors.error,
       ),
     );
