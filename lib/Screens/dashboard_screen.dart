@@ -18,6 +18,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
+  int _previousIndex = 0;
 
   final List<Widget> _screens = const [
     MapScreen(),
@@ -113,9 +114,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
 
-              // Content
+              // Content with animated crossfade
               Expanded(
-                child: IndexedStack(index: _currentIndex, children: _screens),
+                child: AnimatedSwitcher(
+                  duration: AppColors.animNormal,
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  transitionBuilder: (child, animation) {
+                    final offsetX =
+                        _currentIndex >= _previousIndex ? 1.0 : -1.0;
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: Offset(offsetX * 0.06, 0),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: FadeTransition(opacity: animation, child: child),
+                    );
+                  },
+                  child: KeyedSubtree(
+                    key: ValueKey<int>(_currentIndex),
+                    child: _screens[_currentIndex],
+                  ),
+                ),
               ),
             ],
           ),
@@ -136,7 +156,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           currentIndex: _currentIndex,
           onTap: (index) {
             HapticFeedback.selectionClick();
-            setState(() => _currentIndex = index);
+            setState(() {
+              _previousIndex = _currentIndex;
+              _currentIndex = index;
+            });
           },
           type: BottomNavigationBarType.fixed,
           backgroundColor: navTheme.backgroundColor,
@@ -173,22 +196,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showLogoutDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppColors.radius)),
+        backgroundColor: isDark ? AppColors.darkCard : Colors.white,
+        title: Text('Logout',
+            style: TextStyle(
+                color: isDark ? AppColors.darkText2 : AppColors.darkText)),
+        content: Text('Are you sure you want to logout?',
+            style: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black87)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text('Cancel',
+                style: TextStyle(
+                    color: isDark
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade600)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryBlue,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppColors.radiusSm),
               ),
             ),
             onPressed: () async {
