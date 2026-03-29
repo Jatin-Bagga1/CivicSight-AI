@@ -1,9 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../ViewModels/signup_view_model.dart';
 import '../Models/user_model.dart';
 import '../Utils/app_router.dart';
+import '../constants/colors.dart';
 
 class SignUpScreen extends StatelessWidget {
   const SignUpScreen({super.key});
@@ -24,16 +26,36 @@ class _SignUpScreenContent extends StatefulWidget {
   State<_SignUpScreenContent> createState() => _SignUpScreenContentState();
 }
 
-class _SignUpScreenContentState extends State<_SignUpScreenContent> {
+class _SignUpScreenContentState extends State<_SignUpScreenContent>
+    with SingleTickerProviderStateMixin {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  late final AnimationController _animCtrl;
+  late final Animation<double> _fadeIn;
+  late final Animation<Offset> _slideUp;
+
+  @override
+  void initState() {
+    super.initState();
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fadeIn = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    _slideUp = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutCubic));
+    _animCtrl.forward();
+  }
 
   @override
   void dispose() {
+    _animCtrl.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
@@ -46,10 +68,11 @@ class _SignUpScreenContentState extends State<_SignUpScreenContent> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
+        backgroundColor: isError ? AppColors.error : AppColors.success,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppColors.radiusSm)),
       ),
     );
   }
@@ -78,413 +101,502 @@ class _SignUpScreenContentState extends State<_SignUpScreenContent> {
     }
   }
 
-  // Cached email regex for validation
   static final _emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
 
   @override
   Widget build(BuildContext context) {
     final viewModel = context.read<SignUpViewModel>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: Container(
         width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFD6E4F0), Color(0xFFF9D1B7)],
-          ),
+        decoration: BoxDecoration(
+          gradient: isDark ? AppColors.darkGradient : AppColors.lightGradient,
         ),
         child: Stack(
           children: [
-            // Decorative patterns — static, wrapped in RepaintBoundary
-            const Positioned(
-              top: 100,
-              left: -50,
-              child: RepaintBoundary(
-                child: CircleAvatar(
-                  radius: 100,
-                  backgroundColor: Color(0x33FFFFFF),
-                ),
+            Positioned(
+              top: 60,
+              left: -70,
+              child: _GlowCircle(
+                radius: 120,
+                color:
+                    AppColors.primaryOrange.withOpacity(isDark ? 0.12 : 0.18),
               ),
             ),
-            const Positioned(
-              bottom: 100,
-              right: -50,
-              child: RepaintBoundary(
-                child: CircleAvatar(
-                  radius: 80,
-                  backgroundColor: Color(0x26FFFFFF),
-                ),
+            Positioned(
+              bottom: 80,
+              right: -60,
+              child: _GlowCircle(
+                radius: 100,
+                color:
+                    AppColors.primaryBlue.withOpacity(isDark ? 0.12 : 0.15),
               ),
             ),
             SafeArea(
               child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 20),
-                        
-                        // Back Button — static
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: IconButton(
-                            onPressed: () => AppRouter.goBack(context),
-                            icon: const Icon(
-                              Icons.arrow_back_ios,
-                              color: Color(0xFF1A2B47),
+                child: FadeTransition(
+                  opacity: _fadeIn,
+                  child: SlideTransition(
+                    position: _slideUp,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 28),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 12),
+
+                            // Back button
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: IconButton(
+                                onPressed: () => AppRouter.goBack(context),
+                                icon: Icon(
+                                  Icons.arrow_back_ios,
+                                  color: isDark
+                                      ? AppColors.darkText2
+                                      : AppColors.darkText,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
 
-                        // Logo — static
-                        Image.asset(
-                          "assets/images/logo.png",
-                          width: 180,
-                        ),
-                        const SizedBox(height: 20),
-                        const Text(
-                          "Create Account",
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF1A2B47),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "Join Civic Sight AI today",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        const SizedBox(height: 25),
-
-                        // Error Message — only rebuilds on errorMessage change
-                        Selector<SignUpViewModel, String?>(
-                          selector: (_, vm) => vm.errorMessage,
-                          builder: (context, errorMessage, _) {
-                            if (errorMessage == null) return const SizedBox.shrink();
-                            return Container(
-                              padding: const EdgeInsets.all(12),
-                              margin: const EdgeInsets.only(bottom: 16),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.red.shade200),
+                            Image.asset("assets/images/logo.png", width: 170),
+                            const SizedBox(height: 16),
+                            Text(
+                              "Create Account",
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: isDark
+                                    ? AppColors.darkText2
+                                    : AppColors.darkText,
                               ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.error_outline, color: Colors.red.shade700),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      errorMessage,
-                                      style: TextStyle(color: Colors.red.shade700),
-                                    ),
-                                  ),
-                                ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              "Join Civic Sight AI today",
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: isDark
+                                    ? Colors.white54
+                                    : Colors.grey.shade600,
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                            const SizedBox(height: 22),
 
-                        // Role Selection — only rebuilds on role change
-                        Selector<SignUpViewModel, UserRole?>(
-                          selector: (_, vm) => vm.selectedRole,
-                          builder: (context, selectedRole, _) {
-                            return Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(15),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0x0D000000),
-                                    blurRadius: 10,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "I am signing up as:",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF1A2B47),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: _buildRoleCard(
-                                          role: UserRole.citizen,
-                                          icon: Icons.person_outline,
-                                          title: "Citizen",
-                                          subtitle: "Report issues",
-                                          isSelected: selectedRole == UserRole.citizen,
-                                          onTap: () => viewModel.setRole(UserRole.citizen),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: _buildRoleCard(
-                                          role: UserRole.worker,
-                                          icon: Icons.engineering_outlined,
-                                          title: "Field Worker",
-                                          subtitle: "Resolve issues",
-                                          isSelected: selectedRole == UserRole.worker,
-                                          onTap: () => viewModel.setRole(UserRole.worker),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Name Field — static, uses controller
-                        _buildTextField(
-                          controller: _nameController,
-                          icon: Icons.person_outline,
-                          hint: "Full Name",
-                          onChanged: viewModel.setName,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your name';
-                            }
-                            if (value.length < 2) {
-                              return 'Name must be at least 2 characters';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 15),
-
-                        // Email Field — static, uses controller
-                        _buildTextField(
-                          controller: _emailController,
-                          icon: Icons.email_outlined,
-                          hint: "Email",
-                          keyboardType: TextInputType.emailAddress,
-                          onChanged: viewModel.setEmail,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your email';
-                            }
-                            if (!_emailRegex.hasMatch(value)) {
-                              return 'Please enter a valid email';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 15),
-
-                        // Phone Number Field — static, uses controller
-                        _buildTextField(
-                          controller: _phoneController,
-                          icon: Icons.phone_outlined,
-                          hint: "Phone Number (optional)",
-                          keyboardType: TextInputType.phone,
-                          onChanged: viewModel.setPhone,
-                          validator: (value) {
-                            if (value != null && value.isNotEmpty) {
-                              if (value.length < 7) {
-                                return 'Please enter a valid phone number';
-                              }
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 15),
-
-                        // Password Field — rebuilds only on visibility toggle
-                        Selector<SignUpViewModel, bool>(
-                          selector: (_, vm) => vm.isPasswordVisible,
-                          builder: (context, isPasswordVisible, _) {
-                            return _buildTextField(
-                              controller: _passwordController,
-                              icon: Icons.lock_outline,
-                              hint: "Password",
-                              isPassword: true,
-                              isPasswordVisible: isPasswordVisible,
-                              onTogglePassword: viewModel.togglePasswordVisibility,
-                              onChanged: viewModel.setPassword,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your password';
+                            // Error message
+                            Selector<SignUpViewModel, String?>(
+                              selector: (_, vm) => vm.errorMessage,
+                              builder: (_, errorMessage, __) {
+                                if (errorMessage == null) {
+                                  return const SizedBox.shrink();
                                 }
-                                if (value.length < 6) {
-                                  return 'Password must be at least 6 characters';
-                                }
-                                return null;
-                              },
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 15),
-
-                        // Confirm Password Field — rebuilds only on visibility toggle
-                        Selector<SignUpViewModel, bool>(
-                          selector: (_, vm) => vm.isConfirmPasswordVisible,
-                          builder: (context, isConfirmPasswordVisible, _) {
-                            return _buildTextField(
-                              controller: _confirmPasswordController,
-                              icon: Icons.lock_outline,
-                              hint: "Confirm Password",
-                              isPassword: true,
-                              isPasswordVisible: isConfirmPasswordVisible,
-                              onTogglePassword: viewModel.toggleConfirmPasswordVisibility,
-                              onChanged: viewModel.setConfirmPassword,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please confirm your password';
-                                }
-                                if (value != _passwordController.text) {
-                                  return 'Passwords do not match';
-                                }
-                                return null;
-                              },
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 25),
-
-                        // Loading-dependent section
-                        Selector<SignUpViewModel, bool>(
-                          selector: (_, vm) => vm.isLoading,
-                          builder: (context, isLoading, _) {
-                            return Column(
-                              children: [
-                                // Sign Up Button
-                                Container(
-                                  width: double.infinity,
-                                  height: 55,
+                                return Container(
+                                  padding: const EdgeInsets.all(12),
+                                  margin: const EdgeInsets.only(bottom: 16),
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(15),
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFF1A4D94), Color(0xFFF28C38)],
-                                    ),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        color: Color(0x4D2196F3),
-                                        blurRadius: 10,
-                                        offset: Offset(0, 5),
-                                      )
+                                    color: AppColors.error.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(
+                                        AppColors.radiusSm),
+                                    border: Border.all(
+                                        color:
+                                            AppColors.error.withOpacity(0.3)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.error_outline,
+                                          color: AppColors.error, size: 20),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(errorMessage,
+                                            style: const TextStyle(
+                                                color: AppColors.error,
+                                                fontSize: 13)),
+                                      ),
                                     ],
                                   ),
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.transparent,
-                                      shadowColor: Colors.transparent,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(15),
+                                );
+                              },
+                            ),
+
+                            // Role selection glass card
+                            Selector<SignUpViewModel, UserRole?>(
+                              selector: (_, vm) => vm.selectedRole,
+                              builder: (_, selectedRole, __) {
+                                return ClipRRect(
+                                  borderRadius: BorderRadius.circular(
+                                      AppColors.radiusXl),
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(
+                                        sigmaX: 16, sigmaY: 16),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(20),
+                                      decoration: AppColors.glass(isDark),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "I am signing up as:",
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                              color: isDark
+                                                  ? AppColors.darkText2
+                                                  : AppColors.darkText,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: _RoleCard(
+                                                  role: UserRole.citizen,
+                                                  icon: Icons.person_outline,
+                                                  title: "Citizen",
+                                                  subtitle: "Report issues",
+                                                  isSelected: selectedRole ==
+                                                      UserRole.citizen,
+                                                  isDark: isDark,
+                                                  onTap: () => viewModel
+                                                      .setRole(
+                                                          UserRole.citizen),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: _RoleCard(
+                                                  role: UserRole.worker,
+                                                  icon: Icons
+                                                      .engineering_outlined,
+                                                  title: "Field Worker",
+                                                  subtitle: "Resolve issues",
+                                                  isSelected: selectedRole ==
+                                                      UserRole.worker,
+                                                  isDark: isDark,
+                                                  onTap: () => viewModel
+                                                      .setRole(
+                                                          UserRole.worker),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    onPressed: isLoading
-                                        ? null
-                                        : () => _handleSignUp(viewModel),
-                                    child: isLoading
-                                        ? const SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(
-                                              color: Colors.white,
-                                              strokeWidth: 2,
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Input fields glass card
+                            ClipRRect(
+                              borderRadius:
+                                  BorderRadius.circular(AppColors.radiusXl),
+                              child: BackdropFilter(
+                                filter:
+                                    ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                                child: Container(
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: AppColors.glass(isDark),
+                                  child: Column(
+                                    children: [
+                                      TextFormField(
+                                        controller: _nameController,
+                                        onChanged: viewModel.setName,
+                                        validator: (value) {
+                                          if (value == null ||
+                                              value.isEmpty) {
+                                            return 'Please enter your name';
+                                          }
+                                          if (value.length < 2) {
+                                            return 'Name must be at least 2 characters';
+                                          }
+                                          return null;
+                                        },
+                                        decoration: InputDecoration(
+                                          prefixIcon: Icon(
+                                              Icons.person_outline,
+                                              color: isDark
+                                                  ? AppColors.primaryOrange
+                                                  : AppColors.primaryBlue),
+                                          hintText: "Full Name",
+                                        ),
+                                      ),
+                                      const SizedBox(height: 14),
+                                      TextFormField(
+                                        controller: _emailController,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                        onChanged: viewModel.setEmail,
+                                        validator: (value) {
+                                          if (value == null ||
+                                              value.isEmpty) {
+                                            return 'Please enter your email';
+                                          }
+                                          if (!_emailRegex
+                                              .hasMatch(value)) {
+                                            return 'Please enter a valid email';
+                                          }
+                                          return null;
+                                        },
+                                        decoration: InputDecoration(
+                                          prefixIcon: Icon(
+                                              Icons.email_outlined,
+                                              color: isDark
+                                                  ? AppColors.primaryOrange
+                                                  : AppColors.primaryBlue),
+                                          hintText: "Email",
+                                        ),
+                                      ),
+                                      const SizedBox(height: 14),
+                                      TextFormField(
+                                        controller: _phoneController,
+                                        keyboardType: TextInputType.phone,
+                                        onChanged: viewModel.setPhone,
+                                        validator: (value) {
+                                          if (value != null &&
+                                              value.isNotEmpty) {
+                                            if (value.length < 7) {
+                                              return 'Please enter a valid phone number';
+                                            }
+                                          }
+                                          return null;
+                                        },
+                                        decoration: InputDecoration(
+                                          prefixIcon: Icon(
+                                              Icons.phone_outlined,
+                                              color: isDark
+                                                  ? AppColors.primaryOrange
+                                                  : AppColors.primaryBlue),
+                                          hintText: "Phone Number (optional)",
+                                        ),
+                                      ),
+                                      const SizedBox(height: 14),
+
+                                      // Password
+                                      Selector<SignUpViewModel, bool>(
+                                        selector: (_, vm) =>
+                                            vm.isPasswordVisible,
+                                        builder:
+                                            (_, isPasswordVisible, __) {
+                                          return TextFormField(
+                                            controller:
+                                                _passwordController,
+                                            obscureText:
+                                                !isPasswordVisible,
+                                            onChanged:
+                                                viewModel.setPassword,
+                                            validator: (value) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
+                                                return 'Please enter your password';
+                                              }
+                                              if (value.length < 6) {
+                                                return 'Password must be at least 6 characters';
+                                              }
+                                              return null;
+                                            },
+                                            decoration: InputDecoration(
+                                              prefixIcon: Icon(
+                                                  Icons.lock_outline,
+                                                  color: isDark
+                                                      ? AppColors
+                                                          .primaryOrange
+                                                      : AppColors
+                                                          .primaryBlue),
+                                              hintText: "Password",
+                                              suffixIcon: IconButton(
+                                                icon: Icon(
+                                                  isPasswordVisible
+                                                      ? Icons.visibility
+                                                      : Icons
+                                                          .visibility_off,
+                                                  color: isDark
+                                                      ? Colors
+                                                          .grey.shade500
+                                                      : Colors.grey,
+                                                ),
+                                                onPressed: viewModel
+                                                    .togglePasswordVisibility,
+                                              ),
                                             ),
-                                          )
-                                        : const Text(
-                                            "Create Account",
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(height: 14),
+
+                                      // Confirm password
+                                      Selector<SignUpViewModel, bool>(
+                                        selector: (_, vm) =>
+                                            vm.isConfirmPasswordVisible,
+                                        builder: (_,
+                                            isConfirmPasswordVisible,
+                                            __) {
+                                          return TextFormField(
+                                            controller:
+                                                _confirmPasswordController,
+                                            obscureText:
+                                                !isConfirmPasswordVisible,
+                                            onChanged: viewModel
+                                                .setConfirmPassword,
+                                            validator: (value) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
+                                                return 'Please confirm your password';
+                                              }
+                                              if (value !=
+                                                  _passwordController
+                                                      .text) {
+                                                return 'Passwords do not match';
+                                              }
+                                              return null;
+                                            },
+                                            decoration: InputDecoration(
+                                              prefixIcon: Icon(
+                                                  Icons.lock_outline,
+                                                  color: isDark
+                                                      ? AppColors
+                                                          .primaryOrange
+                                                      : AppColors
+                                                          .primaryBlue),
+                                              hintText: "Confirm Password",
+                                              suffixIcon: IconButton(
+                                                icon: Icon(
+                                                  isConfirmPasswordVisible
+                                                      ? Icons.visibility
+                                                      : Icons
+                                                          .visibility_off,
+                                                  color: isDark
+                                                      ? Colors
+                                                          .grey.shade500
+                                                      : Colors.grey,
+                                                ),
+                                                onPressed: viewModel
+                                                    .toggleConfirmPasswordVisibility,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // Buttons section
+                            Selector<SignUpViewModel, bool>(
+                              selector: (_, vm) => vm.isLoading,
+                              builder: (_, isLoading, __) {
+                                return Column(
+                                  children: [
+                                    _GradientButton(
+                                      label: "Create Account",
+                                      isLoading: isLoading,
+                                      onPressed: () =>
+                                          _handleSignUp(viewModel),
+                                    ),
+                                    const SizedBox(height: 24),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Divider(
+                                            color: isDark
+                                                ? Colors.white24
+                                                : Colors.grey.shade400,
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 14),
+                                          child: Text(
+                                            "OR",
                                             style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 18,
+                                              color: isDark
+                                                  ? Colors.white54
+                                                  : Colors.grey.shade600,
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Divider(
+                                            color: isDark
+                                                ? Colors.white24
+                                                : Colors.grey.shade400,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 20),
+                                    _SocialButton(
+                                      icon: Icons.g_mobiledata,
+                                      label: "Continue with Google",
+                                      isDark: isDark,
+                                      onPressed: isLoading
+                                          ? null
+                                          : () => _showSnackBar(
+                                              'Google Sign-Up coming soon!',
+                                              isError: true),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    _SocialButton(
+                                      icon: Icons.facebook,
+                                      label: "Continue with Facebook",
+                                      isDark: isDark,
+                                      onPressed: isLoading
+                                          ? null
+                                          : () => _showSnackBar(
+                                              'Facebook Sign-Up coming soon!',
+                                              isError: true),
+                                    ),
+                                    const SizedBox(height: 28),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          "Already have an account? ",
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black54,
+                                          ),
+                                        ),
+                                        GestureDetector(
+                                          onTap: isLoading
+                                              ? null
+                                              : () => AppRouter.goBack(
+                                                  context),
+                                          child: Text(
+                                            "Log In",
+                                            style: TextStyle(
+                                              color: isDark
+                                                  ? AppColors.primaryOrange
+                                                  : AppColors.primaryBlue,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                  ),
-                                ),
-
-                                const SizedBox(height: 25),
-
-                                // Divider with "OR"
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Divider(color: Colors.grey.shade400),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                                      child: Text(
-                                        "OR",
-                                        style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          fontWeight: FontWeight.w500,
                                         ),
-                                      ),
+                                      ],
                                     ),
-                                    Expanded(
-                                      child: Divider(color: Colors.grey.shade400),
-                                    ),
+                                    const SizedBox(height: 24),
                                   ],
-                                ),
-
-                                const SizedBox(height: 20),
-
-                                // Social Buttons
-                                _buildSocialButton(
-                                  icon: Icons.g_mobiledata,
-                                  text: "Continue with Google",
-                                  onPressed: isLoading ? null : () {
-                                    _showSnackBar('Google Sign-Up coming soon!', isError: true);
-                                  },
-                                ),
-                                const SizedBox(height: 12),
-                                _buildSocialButton(
-                                  icon: Icons.facebook,
-                                  text: "Continue with Facebook",
-                                  onPressed: isLoading ? null : () {
-                                    _showSnackBar('Facebook Sign-Up coming soon!', isError: true);
-                                  },
-                                ),
-
-                                const SizedBox(height: 30),
-
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Text("Already have an account? "),
-                                    GestureDetector(
-                                      onTap: isLoading
-                                          ? null
-                                          : () => AppRouter.goBack(context),
-                                      child: const Text(
-                                        "Log In",
-                                        style: TextStyle(
-                                          color: Colors.blue,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 30),
-                              ],
-                            );
-                          },
+                                );
+                              },
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -495,157 +607,207 @@ class _SignUpScreenContentState extends State<_SignUpScreenContent> {
       ),
     );
   }
+}
 
-  Widget _buildRoleCard({
-    required UserRole role,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
+// ─── Shared UI widgets ───
+
+class _GlowCircle extends StatelessWidget {
+  final double radius;
+  final Color color;
+  const _GlowCircle({required this.radius, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: radius * 2,
+      height: radius * 2,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(colors: [color, color.withOpacity(0)]),
+      ),
+    );
+  }
+}
+
+class _RoleCard extends StatelessWidget {
+  final UserRole role;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool isSelected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _RoleCard({
+    required this.role,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.isSelected,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = role == UserRole.worker
+        ? AppColors.primaryBlue
+        : AppColors.primaryOrange;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(16),
+        duration: AppColors.animFast,
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected 
-              ? (role == UserRole.worker 
-                  ? const Color(0xFF1A4D94).withValues(alpha: 0.1) 
-                  : const Color(0xFFF28C38).withValues(alpha: 0.1))
-              : Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected
+              ? accent.withOpacity(isDark ? 0.15 : 0.1)
+              : (isDark ? Colors.white.withOpacity(0.04) : Colors.grey.shade50),
+          borderRadius: BorderRadius.circular(AppColors.radiusSm),
           border: Border.all(
-            color: isSelected 
-                ? (role == UserRole.worker 
-                    ? const Color(0xFF1A4D94) 
-                    : const Color(0xFFF28C38))
-                : Colors.grey.shade300,
+            color: isSelected
+                ? accent
+                : (isDark ? Colors.white12 : Colors.grey.shade300),
             width: isSelected ? 2 : 1,
           ),
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              size: 40,
-              color: isSelected 
-                  ? (role == UserRole.worker 
-                      ? const Color(0xFF1A4D94) 
-                      : const Color(0xFFF28C38))
-                  : Colors.grey.shade400,
-            ),
+            Icon(icon,
+                size: 36,
+                color: isSelected
+                    ? accent
+                    : (isDark ? Colors.white38 : Colors.grey.shade400)),
             const SizedBox(height: 8),
             Text(
               title,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: isSelected 
-                    ? const Color(0xFF1A2B47) 
-                    : Colors.grey.shade600,
+                color: isSelected
+                    ? (isDark ? AppColors.darkText2 : AppColors.darkText)
+                    : (isDark ? Colors.white54 : Colors.grey.shade600),
               ),
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade500,
+                fontSize: 11,
+                color: isDark ? Colors.white38 : Colors.grey.shade500,
               ),
             ),
             if (isSelected)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Icon(
-                  Icons.check_circle,
-                  color: role == UserRole.worker 
-                      ? const Color(0xFF1A4D94) 
-                      : const Color(0xFFF28C38),
-                  size: 20,
-                ),
+                padding: const EdgeInsets.only(top: 6),
+                child: Icon(Icons.check_circle, color: accent, size: 18),
               ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required IconData icon,
-    required String hint,
-    bool isPassword = false,
-    bool isPasswordVisible = false,
-    VoidCallback? onTogglePassword,
-    TextInputType keyboardType = TextInputType.text,
-    required Function(String) onChanged,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: isPassword && !isPasswordVisible,
-      keyboardType: keyboardType,
-      onChanged: onChanged,
-      validator: validator,
-      decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: const Color(0xFF1A4D94)),
-        suffixIcon: isPassword
-            ? IconButton(
-                icon: Icon(
-                  isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                  color: Colors.grey,
-                ),
-                onPressed: onTogglePassword,
+class _GradientButton extends StatelessWidget {
+  final String label;
+  final bool isLoading;
+  final VoidCallback onPressed;
+  const _GradientButton(
+      {required this.label,
+      required this.isLoading,
+      required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 54,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppColors.radius),
+        gradient: AppColors.buttonGradient,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withOpacity(0.35),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppColors.radius),
+          ),
+        ),
+        onPressed: isLoading ? null : onPressed,
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                    color: Colors.white, strokeWidth: 2.5),
               )
-            : null,
-        hintText: hint,
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(vertical: 18),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide.none,
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: Colors.red, width: 1),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: Colors.red, width: 1),
-        ),
+            : Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
+              ),
       ),
     );
   }
+}
 
-  Widget _buildSocialButton({
-    required IconData icon,
-    required String text,
-    VoidCallback? onPressed,
-  }) {
-    return OutlinedButton(
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 50),
-        backgroundColor: Colors.white,
-        side: const BorderSide(color: Colors.white),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      ),
-      onPressed: onPressed,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: Colors.blueGrey),
-          const SizedBox(width: 10),
-          Text(
-            text,
-            style: const TextStyle(
-              color: Colors.black87,
-              fontWeight: FontWeight.w500,
-            ),
+class _SocialButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isDark;
+  final VoidCallback? onPressed;
+  const _SocialButton(
+      {required this.icon,
+      required this.label,
+      required this.isDark,
+      this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          backgroundColor:
+              isDark ? Colors.white.withOpacity(0.06) : Colors.white,
+          side: BorderSide(
+            color: isDark ? Colors.white12 : Colors.grey.shade300,
           ),
-        ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppColors.radiusSm),
+          ),
+        ),
+        onPressed: onPressed,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon,
+                color: isDark ? Colors.white70 : Colors.blueGrey, size: 22),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black87,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
