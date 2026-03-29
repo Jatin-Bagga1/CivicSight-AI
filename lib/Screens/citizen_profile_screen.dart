@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../ViewModels/citizen_profile_view_model.dart';
 import '../Services/accent_color_provider.dart';
+import '../Services/auth_service.dart';
+import '../Models/user_model.dart';
 import '../constants/colors.dart';
 
 class CitizenProfileScreen extends StatelessWidget {
@@ -31,11 +33,12 @@ class _CitizenProfileBody extends StatelessWidget {
     final vm = context.watch<CitizenProfileViewModel>();
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isWorker = AuthService().currentUser?.role == UserRole.worker;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBg1 : AppColors.lightBg1,
       appBar: AppBar(
-        title: const Text('Citizen Profile'),
+        title: Text(isWorker ? 'Worker Profile' : 'Citizen Profile'),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -52,7 +55,7 @@ class _CitizenProfileBody extends StatelessWidget {
           ? const Center(child: CircularProgressIndicator())
           : vm.errorMessage != null && vm.profile == null
               ? _ErrorView(message: vm.errorMessage!)
-              : _ProfileForm(isDark: isDark),
+              : _ProfileForm(isDark: isDark, isWorker: isWorker),
     );
   }
 }
@@ -96,7 +99,8 @@ class _ErrorView extends StatelessWidget {
 
 class _ProfileForm extends StatelessWidget {
   final bool isDark;
-  const _ProfileForm({required this.isDark});
+  final bool isWorker;
+  const _ProfileForm({required this.isDark, required this.isWorker});
 
   @override
   Widget build(BuildContext context) {
@@ -107,11 +111,13 @@ class _ProfileForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ─── Accent Colour Picker ───
-          _SectionLabel(label: 'Accent Colour', isDark: isDark),
-          const SizedBox(height: 8),
-          _ColorPickerRow(isDark: isDark),
-          const SizedBox(height: 24),
+          // ─── Accent Colour Picker (citizens only) ───
+          if (!isWorker) ...[
+            _SectionLabel(label: 'Accent Colour', isDark: isDark),
+            const SizedBox(height: 8),
+            _ColorPickerRow(isDark: isDark),
+            const SizedBox(height: 24),
+          ],
 
           // ─── Editable Fields ───
           _SectionLabel(label: 'Address Information', isDark: isDark),
