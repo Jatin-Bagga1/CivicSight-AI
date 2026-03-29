@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 /// CivicSight AI Color Palette
@@ -44,4 +45,33 @@ class AppColors {
   static const LinearGradient buttonGradient = LinearGradient(
     colors: [primaryBlue, primaryOrange],
   );
+
+  // ─── Standardised design tokens ───
+  static const double radius = 16;
+  static const double radiusSm = 12;
+  static const double radiusXl = 24;
+  static const Duration animFast = Duration(milliseconds: 200);
+  static const Duration animNormal = Duration(milliseconds: 350);
+
+  /// Frosted-glass card decoration.
+  static BoxDecoration glass(bool isDark) => BoxDecoration(
+        color: isDark
+            ? Colors.white.withOpacity(0.07)
+            : Colors.white.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.10)
+              : Colors.white.withOpacity(0.60),
+        ),
+      );
+
+  /// Standard card shadow.
+  static List<BoxShadow> cardShadow(bool isDark) => [
+        BoxShadow(
+          color: Colors.black.withOpacity(isDark ? 0.25 : 0.08),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
 }
