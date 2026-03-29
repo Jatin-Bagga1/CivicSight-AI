@@ -220,9 +220,98 @@ class _WorkerDashboardContentState extends State<_WorkerDashboardContent> {
                   ],
                 ),
               ),
+              // Map Mode Toggle
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkCard : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(3),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => vm.toggleMapMode(false),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: !vm.showAllReports
+                                  ? AppColors.primaryBlue
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.person_pin_circle,
+                                  size: 16,
+                                  color: !vm.showAllReports
+                                      ? Colors.white
+                                      : (isDark ? Colors.white60 : Colors.black54),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'My Assigned',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: !vm.showAllReports
+                                        ? Colors.white
+                                        : (isDark ? Colors.white60 : Colors.black54),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => vm.toggleMapMode(true),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: vm.showAllReports
+                                  ? AppColors.primaryBlue
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.map,
+                                  size: 16,
+                                  color: vm.showAllReports
+                                      ? Colors.white
+                                      : (isDark ? Colors.white60 : Colors.black54),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'All Reports',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: vm.showAllReports
+                                        ? Colors.white
+                                        : (isDark ? Colors.white60 : Colors.black54),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               // Map Section
               SizedBox(
-            height: MediaQuery.of(context).size.height * 0.4,
+            height: MediaQuery.of(context).size.height * 0.35,
             child: GoogleMap(
               initialCameraPosition: CameraPosition(
                 target: vm.currentLocation,
