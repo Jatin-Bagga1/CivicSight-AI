@@ -10,6 +10,7 @@ class WorkerDashboardViewModel extends ChangeNotifier {
   String? _workerUid;
   
   List<Map<String, dynamic>> _allTasks = [];
+  List<Map<String, dynamic>> _allReports = [];
   bool _isLoading = true;
   String? _errorMessage;
   bool _isUpdatingShift = false;
@@ -25,6 +26,7 @@ class WorkerDashboardViewModel extends ChangeNotifier {
   LatLng _currentLocation = const LatLng(43.6532, -79.3832); // Toronto default
   bool _locationLoaded = false;
   Set<Marker> _markers = {};
+  bool _showAllReports = false; // false = My Assigned, true = All Reports
 
   // Getters
   List<Map<String, dynamic>> get assignedTasks => _applyFilters(_allTasks);
@@ -39,6 +41,7 @@ class WorkerDashboardViewModel extends ChangeNotifier {
   String get dueFilter => _dueFilter;
   bool get isUpdatingShift => _isUpdatingShift;
   String get shiftStatus => _shiftStatus;
+  bool get showAllReports => _showAllReports;
   int get totalTasksCount => _allTasks.length;
   int get inProgressCount =>
       _allTasks.where((t) => (t['status'] as String?) == 'in_progress').length;
@@ -134,6 +137,10 @@ class WorkerDashboardViewModel extends ChangeNotifier {
       debugPrint('WorkerDashboard: Loaded ${tasks.length} tasks for worker $uid');
 
       _allTasks = tasks;
+
+      // Also load all reports for "All Reports" map mode
+      _allReports = await _supabase.getAllReportsWithLocations();
+
       _buildMarkers();
 
       _isLoading = false;
@@ -187,10 +194,17 @@ class WorkerDashboardViewModel extends ChangeNotifier {
     }
   }
 
+  void toggleMapMode(bool showAll) {
+    _showAllReports = showAll;
+    _buildMarkers();
+    notifyListeners();
+  }
+
   void _buildMarkers() {
     final Set<Marker> newMarkers = {};
 
-    for (final task in assignedTasks) {
+    final source = _showAllReports ? _allReports : assignedTasks;
+    for (final task in source) {
       final locations = task['report_locations'];
       double? lat;
       double? lng;
