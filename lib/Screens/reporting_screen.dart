@@ -54,7 +54,7 @@ class _ReportingContentState extends State<_ReportingContent> {
         backgroundColor: isError ? AppColors.error : AppColors.success,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppColors.radiusSm)),
       ),
     );
   }
@@ -63,8 +63,8 @@ class _ReportingContentState extends State<_ReportingContent> {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppColors.radiusXl)),
       ),
       builder: (_) => SafeArea(
         child: Padding(
@@ -91,7 +91,7 @@ class _ReportingContentState extends State<_ReportingContent> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: AppColors.primaryBlue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppColors.radiusSm),
                   ),
                   child: const Icon(
                     Icons.camera_alt_rounded,
@@ -110,7 +110,7 @@ class _ReportingContentState extends State<_ReportingContent> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: AppColors.primaryOrange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppColors.radiusSm),
                   ),
                   child: const Icon(
                     Icons.photo_library_rounded,
@@ -144,8 +144,8 @@ class _ReportingContentState extends State<_ReportingContent> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppColors.radiusXl)),
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) => SizedBox(
@@ -210,7 +210,7 @@ class _ReportingContentState extends State<_ReportingContent> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryBlue,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(AppColors.radius),
                       ),
                     ),
                     child: const Text(
@@ -375,14 +375,8 @@ class _ReportingContentState extends State<_ReportingContent> {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkCard : Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(AppColors.radius),
+            boxShadow: AppColors.cardShadow(isDark),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -506,7 +500,7 @@ class _ReportingContentState extends State<_ReportingContent> {
             margin: const EdgeInsets.only(top: 4),
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkCard : Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppColors.radiusSm),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
@@ -557,12 +551,12 @@ class _ReportingContentState extends State<_ReportingContent> {
     return Expanded(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppColors.radiusSm),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: AppColors.primaryBlue.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppColors.radiusSm),
           ),
           child: Column(
             children: [
@@ -629,7 +623,7 @@ class _ReportingContentState extends State<_ReportingContent> {
           color: isDark
               ? AppColors.darkCard.withOpacity(0.6)
               : Colors.white.withOpacity(0.7),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppColors.radius),
           border: Border.all(
             color: AppColors.primaryBlue.withOpacity(0.3),
             width: 2,
@@ -678,7 +672,7 @@ class _ReportingContentState extends State<_ReportingContent> {
           width: double.infinity,
           height: 220,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppColors.radius),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.15),
@@ -688,7 +682,7 @@ class _ReportingContentState extends State<_ReportingContent> {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppColors.radius),
             child: Image.file(vm.selectedImage!, fit: BoxFit.cover),
           ),
         ),
@@ -758,7 +752,7 @@ class _ReportingContentState extends State<_ReportingContent> {
         color: isDark
             ? AppColors.darkCard.withOpacity(0.8)
             : AppColors.primaryBlue.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppColors.radius),
         border: Border.all(color: AppColors.primaryBlue.withOpacity(0.2)),
       ),
       child: Row(
@@ -798,7 +792,7 @@ class _ReportingContentState extends State<_ReportingContent> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppColors.radius),
         border: isValid
             ? null
             : Border.all(color: Colors.orange.withOpacity(0.3)),
@@ -888,7 +882,7 @@ class _ReportingContentState extends State<_ReportingContent> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppColors.error.withOpacity(isDark ? 0.2 : 0.08),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppColors.radius),
         border: Border.all(color: AppColors.error.withOpacity(0.4)),
       ),
       child: Column(
@@ -1021,14 +1015,8 @@ class _ReportingContentState extends State<_ReportingContent> {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppColors.radius),
+        boxShadow: AppColors.cardShadow(isDark),
       ),
       child: TextFormField(
         controller: controller,
@@ -1044,7 +1032,7 @@ class _ReportingContentState extends State<_ReportingContent> {
             vertical: 14,
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppColors.radius),
             borderSide: BorderSide.none,
           ),
         ),
@@ -1061,7 +1049,7 @@ class _ReportingContentState extends State<_ReportingContent> {
         decoration: BoxDecoration(
           gradient: isLoading ? null : AppColors.buttonGradient,
           color: isLoading ? Colors.grey : null,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppColors.radius),
           boxShadow: isLoading
               ? null
               : [
@@ -1078,7 +1066,7 @@ class _ReportingContentState extends State<_ReportingContent> {
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppColors.radius),
             ),
           ),
           child: isLoading

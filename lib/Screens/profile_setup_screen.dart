@@ -1,9 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../ViewModels/profile_setup_view_model.dart';
 import '../Models/user_model.dart';
 import '../Utils/app_router.dart';
+import '../constants/colors.dart';
 
 class ProfileSetupScreen extends StatelessWidget {
   const ProfileSetupScreen({super.key});
@@ -24,15 +26,29 @@ class _ProfileSetupContent extends StatefulWidget {
   State<_ProfileSetupContent> createState() => _ProfileSetupContentState();
 }
 
-class _ProfileSetupContentState extends State<_ProfileSetupContent> {
+class _ProfileSetupContentState extends State<_ProfileSetupContent>
+    with SingleTickerProviderStateMixin {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  late final AnimationController _animCtrl;
+  late final Animation<double> _fadeIn;
+  late final Animation<Offset> _slideUp;
 
   @override
   void initState() {
     super.initState();
-    // Pre-fill controllers from existing data after first frame
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fadeIn = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    _slideUp = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutCubic));
+    _animCtrl.forward();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = context.read<ProfileSetupViewModel>();
       _nameController.text = viewModel.fullName;
@@ -42,6 +58,7 @@ class _ProfileSetupContentState extends State<_ProfileSetupContent> {
 
   @override
   void dispose() {
+    _animCtrl.dispose();
     _nameController.dispose();
     _phoneController.dispose();
     super.dispose();
@@ -51,10 +68,11 @@ class _ProfileSetupContentState extends State<_ProfileSetupContent> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
+        backgroundColor: isError ? AppColors.error : AppColors.success,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppColors.radiusSm)),
       ),
     );
   }
@@ -86,308 +104,328 @@ class _ProfileSetupContentState extends State<_ProfileSetupContent> {
   @override
   Widget build(BuildContext context) {
     final viewModel = context.read<ProfileSetupViewModel>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: Container(
         width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFD6E4F0), Color(0xFFF9D1B7)],
-          ),
+        decoration: BoxDecoration(
+          gradient: isDark ? AppColors.darkGradient : AppColors.lightGradient,
         ),
         child: Stack(
           children: [
-            // Decorative patterns — static, wrapped in RepaintBoundary
-            const Positioned(
-              top: 80,
-              right: -60,
-              child: RepaintBoundary(
-                child: CircleAvatar(
-                  radius: 100,
-                  backgroundColor: Color(0x33FFFFFF),
-                ),
+            Positioned(
+              top: 40,
+              right: -70,
+              child: _GlowCircle(
+                radius: 130,
+                color:
+                    AppColors.primaryOrange.withOpacity(isDark ? 0.12 : 0.18),
               ),
             ),
-            const Positioned(
-              bottom: 120,
-              left: -40,
-              child: RepaintBoundary(
-                child: CircleAvatar(
-                  radius: 70,
-                  backgroundColor: Color(0x26FFFFFF),
-                ),
+            Positioned(
+              bottom: 100,
+              left: -50,
+              child: _GlowCircle(
+                radius: 90,
+                color:
+                    AppColors.primaryBlue.withOpacity(isDark ? 0.12 : 0.15),
               ),
             ),
             SafeArea(
               child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 40),
+                child: FadeTransition(
+                  opacity: _fadeIn,
+                  child: SlideTransition(
+                    position: _slideUp,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 28),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 32),
 
-                        // Icon — static
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: const BoxDecoration(
-                            color: Color(0x1A1A4D94),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.person_add_alt_1_rounded,
-                            size: 60,
-                            color: Color(0xFF1A4D94),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        const Text(
-                          "Complete Your Profile",
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF1A2B47),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "We need a few more details to get you started",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-
-                        // Show email badge — only rebuilds when currentUser changes
-                        Selector<ProfileSetupViewModel, String?>(
-                          selector: (_, vm) => vm.currentUser?.email,
-                          builder: (context, email, _) {
-                            if (email == null) return const SizedBox.shrink();
-                            return Container(
-                              margin: const EdgeInsets.only(top: 16),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
+                            // Icon
+                            Container(
+                              padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: Colors.grey.shade300,
-                                ),
+                                color: (isDark
+                                        ? AppColors.primaryOrange
+                                        : AppColors.primaryBlue)
+                                    .withOpacity(0.12),
+                                shape: BoxShape.circle,
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.email_outlined,
-                                    size: 18,
-                                    color: Color(0xFF1A4D94),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    email,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF1A2B47),
-                                      fontWeight: FontWeight.w500,
+                              child: Icon(
+                                Icons.person_add_alt_1_rounded,
+                                size: 56,
+                                color: isDark
+                                    ? AppColors.primaryOrange
+                                    : AppColors.primaryBlue,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            Text(
+                              "Complete Your Profile",
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: isDark
+                                    ? AppColors.darkText2
+                                    : AppColors.darkText,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              "We need a few more details to get you started",
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: isDark
+                                    ? Colors.white54
+                                    : Colors.grey.shade600,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+
+                            // Email badge
+                            Selector<ProfileSetupViewModel, String?>(
+                              selector: (_, vm) => vm.currentUser?.email,
+                              builder: (_, email, __) {
+                                if (email == null) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Container(
+                                  margin: const EdgeInsets.only(top: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? Colors.white.withOpacity(0.08)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? Colors.white12
+                                          : Colors.grey.shade300,
                                     ),
                                   ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-
-                        const SizedBox(height: 30),
-
-                        // Error Message — only rebuilds on errorMessage change
-                        Selector<ProfileSetupViewModel, String?>(
-                          selector: (_, vm) => vm.errorMessage,
-                          builder: (context, errorMessage, _) {
-                            if (errorMessage == null) return const SizedBox.shrink();
-                            return Container(
-                              padding: const EdgeInsets.all(12),
-                              margin: const EdgeInsets.only(bottom: 16),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.red.shade200),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.error_outline, color: Colors.red.shade700),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      errorMessage,
-                                      style: TextStyle(color: Colors.red.shade700),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-
-                        // Role Selection — only rebuilds on role change
-                        Selector<ProfileSetupViewModel, UserRole?>(
-                          selector: (_, vm) => vm.selectedRole,
-                          builder: (context, selectedRole, _) {
-                            return Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(15),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0x0D000000),
-                                    blurRadius: 10,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "I am a:",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF1A2B47),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Row(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Expanded(
-                                        child: _buildRoleCard(
-                                          role: UserRole.citizen,
-                                          icon: Icons.person_outline,
-                                          title: "Citizen",
-                                          subtitle: "Report issues",
-                                          isSelected: selectedRole == UserRole.citizen,
-                                          onTap: () => viewModel.setRole(UserRole.citizen),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: _buildRoleCard(
-                                          role: UserRole.worker,
-                                          icon: Icons.engineering_outlined,
-                                          title: "Field Worker",
-                                          subtitle: "Resolve issues",
-                                          isSelected: selectedRole == UserRole.worker,
-                                          onTap: () => viewModel.setRole(UserRole.worker),
+                                      Icon(Icons.email_outlined,
+                                          size: 18,
+                                          color: isDark
+                                              ? AppColors.primaryOrange
+                                              : AppColors.primaryBlue),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        email,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: isDark
+                                              ? AppColors.darkText2
+                                              : AppColors.darkText,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 20),
+                                );
+                              },
+                            ),
 
-                        // Full Name Field — static, uses controller
-                        _buildTextField(
-                          controller: _nameController,
-                          icon: Icons.person_outline,
-                          hint: "Full Name",
-                          onChanged: viewModel.setFullName,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter your full name';
-                            }
-                            if (value.trim().length < 2) {
-                              return 'Name must be at least 2 characters';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 15),
+                            const SizedBox(height: 24),
 
-                        // Phone Number Field — static, uses controller
-                        _buildTextField(
-                          controller: _phoneController,
-                          icon: Icons.phone_outlined,
-                          hint: "Phone Number (optional)",
-                          keyboardType: TextInputType.phone,
-                          onChanged: viewModel.setPhone,
-                          validator: (value) {
-                            if (value != null && value.isNotEmpty) {
-                              if (value.length < 7) {
-                                return 'Please enter a valid phone number';
-                              }
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 30),
-
-                        // Save Button — only rebuilds on loading change
-                        Selector<ProfileSetupViewModel, bool>(
-                          selector: (_, vm) => vm.isLoading,
-                          builder: (context, isLoading, _) {
-                            return Container(
-                              width: double.infinity,
-                              height: 55,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(15),
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF1A4D94), Color(0xFFF28C38)],
-                                ),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0x4D2196F3),
-                                    blurRadius: 10,
-                                    offset: Offset(0, 5),
+                            // Error message
+                            Selector<ProfileSetupViewModel, String?>(
+                              selector: (_, vm) => vm.errorMessage,
+                              builder: (_, errorMessage, __) {
+                                if (errorMessage == null) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Container(
+                                  padding: const EdgeInsets.all(12),
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(
+                                        AppColors.radiusSm),
+                                    border: Border.all(
+                                        color:
+                                            AppColors.error.withOpacity(0.3)),
                                   ),
-                                ],
-                              ),
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.error_outline,
+                                          color: AppColors.error, size: 20),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(errorMessage,
+                                            style: const TextStyle(
+                                                color: AppColors.error,
+                                                fontSize: 13)),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                onPressed: isLoading
-                                    ? null
-                                    : () => _handleSaveProfile(viewModel),
-                                child: isLoading
-                                    ? const SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Text(
-                                        "Continue",
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
+                                );
+                              },
+                            ),
+
+                            // Role selection glass card
+                            Selector<ProfileSetupViewModel, UserRole?>(
+                              selector: (_, vm) => vm.selectedRole,
+                              builder: (_, selectedRole, __) {
+                                return ClipRRect(
+                                  borderRadius: BorderRadius.circular(
+                                      AppColors.radiusXl),
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(
+                                        sigmaX: 16, sigmaY: 16),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(20),
+                                      decoration: AppColors.glass(isDark),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "I am a:",
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                              color: isDark
+                                                  ? AppColors.darkText2
+                                                  : AppColors.darkText,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: _RoleCard(
+                                                  role: UserRole.citizen,
+                                                  icon: Icons.person_outline,
+                                                  title: "Citizen",
+                                                  subtitle: "Report issues",
+                                                  isSelected: selectedRole ==
+                                                      UserRole.citizen,
+                                                  isDark: isDark,
+                                                  onTap: () => viewModel
+                                                      .setRole(
+                                                          UserRole.citizen),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: _RoleCard(
+                                                  role: UserRole.worker,
+                                                  icon: Icons
+                                                      .engineering_outlined,
+                                                  title: "Field Worker",
+                                                  subtitle: "Resolve issues",
+                                                  isSelected: selectedRole ==
+                                                      UserRole.worker,
+                                                  isDark: isDark,
+                                                  onTap: () => viewModel
+                                                      .setRole(
+                                                          UserRole.worker),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Input fields glass card
+                            ClipRRect(
+                              borderRadius:
+                                  BorderRadius.circular(AppColors.radiusXl),
+                              child: BackdropFilter(
+                                filter:
+                                    ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                                child: Container(
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: AppColors.glass(isDark),
+                                  child: Column(
+                                    children: [
+                                      TextFormField(
+                                        controller: _nameController,
+                                        onChanged: viewModel.setFullName,
+                                        validator: (value) {
+                                          if (value == null ||
+                                              value.trim().isEmpty) {
+                                            return 'Please enter your full name';
+                                          }
+                                          if (value.trim().length < 2) {
+                                            return 'Name must be at least 2 characters';
+                                          }
+                                          return null;
+                                        },
+                                        decoration: InputDecoration(
+                                          prefixIcon: Icon(
+                                              Icons.person_outline,
+                                              color: isDark
+                                                  ? AppColors.primaryOrange
+                                                  : AppColors.primaryBlue),
+                                          hintText: "Full Name",
                                         ),
                                       ),
+                                      const SizedBox(height: 14),
+                                      TextFormField(
+                                        controller: _phoneController,
+                                        keyboardType: TextInputType.phone,
+                                        onChanged: viewModel.setPhone,
+                                        validator: (value) {
+                                          if (value != null &&
+                                              value.isNotEmpty) {
+                                            if (value.length < 7) {
+                                              return 'Please enter a valid phone number';
+                                            }
+                                          }
+                                          return null;
+                                        },
+                                        decoration: InputDecoration(
+                                          prefixIcon: Icon(
+                                              Icons.phone_outlined,
+                                              color: isDark
+                                                  ? AppColors.primaryOrange
+                                                  : AppColors.primaryBlue),
+                                          hintText: "Phone Number (optional)",
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            );
-                          },
-                        ),
+                            ),
 
-                        const SizedBox(height: 40),
-                      ],
+                            const SizedBox(height: 28),
+
+                            // Save button
+                            Selector<ProfileSetupViewModel, bool>(
+                              selector: (_, vm) => vm.isLoading,
+                              builder: (_, isLoading, __) {
+                                return _GradientButton(
+                                  label: "Continue",
+                                  isLoading: isLoading,
+                                  onPressed: () =>
+                                      _handleSaveProfile(viewModel),
+                                );
+                              },
+                            ),
+
+                            const SizedBox(height: 40),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -398,114 +436,160 @@ class _ProfileSetupContentState extends State<_ProfileSetupContent> {
       ),
     );
   }
+}
 
-  Widget _buildRoleCard({
-    required UserRole role,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
+// ─── Shared UI widgets ───
+
+class _GlowCircle extends StatelessWidget {
+  final double radius;
+  final Color color;
+  const _GlowCircle({required this.radius, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: radius * 2,
+      height: radius * 2,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(colors: [color, color.withOpacity(0)]),
+      ),
+    );
+  }
+}
+
+class _RoleCard extends StatelessWidget {
+  final UserRole role;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool isSelected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _RoleCard({
+    required this.role,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.isSelected,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = role == UserRole.worker
+        ? AppColors.primaryBlue
+        : AppColors.primaryOrange;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(16),
+        duration: AppColors.animFast,
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isSelected
-              ? (role == UserRole.worker
-                  ? const Color(0xFF1A4D94).withValues(alpha: 0.1)
-                  : const Color(0xFFF28C38).withValues(alpha: 0.1))
-              : Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(12),
+              ? accent.withOpacity(isDark ? 0.15 : 0.1)
+              : (isDark
+                  ? Colors.white.withOpacity(0.04)
+                  : Colors.grey.shade50),
+          borderRadius: BorderRadius.circular(AppColors.radiusSm),
           border: Border.all(
             color: isSelected
-                ? (role == UserRole.worker
-                    ? const Color(0xFF1A4D94)
-                    : const Color(0xFFF28C38))
-                : Colors.grey.shade300,
+                ? accent
+                : (isDark ? Colors.white12 : Colors.grey.shade300),
             width: isSelected ? 2 : 1,
           ),
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              size: 40,
-              color: isSelected
-                  ? (role == UserRole.worker
-                      ? const Color(0xFF1A4D94)
-                      : const Color(0xFFF28C38))
-                  : Colors.grey.shade400,
-            ),
+            Icon(icon,
+                size: 36,
+                color: isSelected
+                    ? accent
+                    : (isDark ? Colors.white38 : Colors.grey.shade400)),
             const SizedBox(height: 8),
             Text(
               title,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: isSelected
-                    ? const Color(0xFF1A2B47)
-                    : Colors.grey.shade600,
+                    ? (isDark ? AppColors.darkText2 : AppColors.darkText)
+                    : (isDark ? Colors.white54 : Colors.grey.shade600),
               ),
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade500,
+                fontSize: 11,
+                color: isDark ? Colors.white38 : Colors.grey.shade500,
               ),
             ),
             if (isSelected)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Icon(
-                  Icons.check_circle,
-                  color: role == UserRole.worker
-                      ? const Color(0xFF1A4D94)
-                      : const Color(0xFFF28C38),
-                  size: 20,
-                ),
+                padding: const EdgeInsets.only(top: 6),
+                child: Icon(Icons.check_circle, color: accent, size: 18),
               ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required IconData icon,
-    required String hint,
-    TextInputType keyboardType = TextInputType.text,
-    required Function(String) onChanged,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      onChanged: onChanged,
-      validator: validator,
-      decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: const Color(0xFF1A4D94)),
-        hintText: hint,
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(vertical: 18),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide.none,
+class _GradientButton extends StatelessWidget {
+  final String label;
+  final bool isLoading;
+  final VoidCallback onPressed;
+  const _GradientButton(
+      {required this.label,
+      required this.isLoading,
+      required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 54,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppColors.radius),
+        gradient: AppColors.buttonGradient,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withOpacity(0.35),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppColors.radius),
+          ),
         ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: Colors.red, width: 1),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: Colors.red, width: 1),
-        ),
+        onPressed: isLoading ? null : onPressed,
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                    color: Colors.white, strokeWidth: 2.5),
+              )
+            : Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
+              ),
       ),
     );
   }

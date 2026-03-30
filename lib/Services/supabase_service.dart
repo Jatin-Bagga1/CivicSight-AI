@@ -228,10 +228,11 @@ class SupabaseService {
     double? longitude,
   }) async {
     try {
-      await _client.from('worker_profiles').update({
+      await _client.from('worker_profiles').upsert({
+        'worker_id': workerId,
         'shift_status': shiftStatus,
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('worker_id', workerId);
+      }, onConflict: 'worker_id');
     } catch (_) {
       // silently fail if column not yet migrated
     }

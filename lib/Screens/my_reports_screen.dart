@@ -175,7 +175,23 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _reports.length,
-        itemBuilder: (_, index) => _buildReportCard(_reports[index], isDark),
+        itemBuilder: (_, index) {
+          return TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: Duration(milliseconds: 350 + (index * 60).clamp(0, 300)),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Transform.translate(
+                  offset: Offset(0, 20 * (1 - value)),
+                  child: child,
+                ),
+              );
+            },
+            child: _buildReportCard(_reports[index], isDark),
+          );
+        },
       ),
     );
   }
@@ -219,14 +235,8 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppColors.radius),
+        boxShadow: AppColors.cardShadow(isDark),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,8 +246,8 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(14),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(AppColors.radius),
                   ),
                   child: Image.network(
                     imageUrl,
@@ -410,7 +420,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: _statusColor(status),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppColors.radiusSm),
       ),
       child: Text(
         status.replaceAll('_', ' ').toUpperCase(),

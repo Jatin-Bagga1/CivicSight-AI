@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../ViewModels/citizen_profile_view_model.dart';
 import '../Services/accent_color_provider.dart';
+import '../Services/auth_service.dart';
+import '../Models/user_model.dart';
 import '../constants/colors.dart';
 
 class CitizenProfileScreen extends StatelessWidget {
@@ -31,11 +33,12 @@ class _CitizenProfileBody extends StatelessWidget {
     final vm = context.watch<CitizenProfileViewModel>();
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isWorker = AuthService().currentUser?.role == UserRole.worker;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBg1 : AppColors.lightBg1,
       appBar: AppBar(
-        title: const Text('Citizen Profile'),
+        title: Text(isWorker ? 'Worker Profile' : 'Citizen Profile'),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -52,7 +55,7 @@ class _CitizenProfileBody extends StatelessWidget {
           ? const Center(child: CircularProgressIndicator())
           : vm.errorMessage != null && vm.profile == null
               ? _ErrorView(message: vm.errorMessage!)
-              : _ProfileForm(isDark: isDark),
+              : _ProfileForm(isDark: isDark, isWorker: isWorker),
     );
   }
 }
@@ -96,7 +99,8 @@ class _ErrorView extends StatelessWidget {
 
 class _ProfileForm extends StatelessWidget {
   final bool isDark;
-  const _ProfileForm({required this.isDark});
+  final bool isWorker;
+  const _ProfileForm({required this.isDark, required this.isWorker});
 
   @override
   Widget build(BuildContext context) {
@@ -107,11 +111,13 @@ class _ProfileForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ─── Accent Colour Picker ───
-          _SectionLabel(label: 'Accent Colour', isDark: isDark),
-          const SizedBox(height: 8),
-          _ColorPickerRow(isDark: isDark),
-          const SizedBox(height: 24),
+          // ─── Accent Colour Picker (citizens only) ───
+          if (!isWorker) ...[
+            _SectionLabel(label: 'Accent Colour', isDark: isDark),
+            const SizedBox(height: 8),
+            _ColorPickerRow(isDark: isDark),
+            const SizedBox(height: 24),
+          ],
 
           // ─── Editable Fields ───
           _SectionLabel(label: 'Address Information', isDark: isDark),
@@ -262,11 +268,11 @@ class _StyledField extends StatelessWidget {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppColors.radiusSm),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppColors.radiusSm),
           borderSide: BorderSide(
             color: isDark
                 ? Colors.grey.shade700
@@ -274,7 +280,7 @@ class _StyledField extends StatelessWidget {
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppColors.radiusSm),
           borderSide: const BorderSide(
             color: AppColors.primaryBlue,
             width: 1.5,
@@ -306,7 +312,7 @@ class _InfoTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppColors.radiusSm),
         border: Border.all(
           color: isDark ? Colors.grey.shade700 : Colors.grey.shade200,
         ),
@@ -382,7 +388,7 @@ class _ColorPickerRowState extends State<_ColorPickerRow> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: widget.isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppColors.radiusSm),
         border: Border.all(
           color: widget.isDark ? Colors.grey.shade700 : Colors.grey.shade300,
         ),
@@ -446,7 +452,7 @@ class _SaveButton extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: AppColors.buttonGradient,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppColors.radius),
         ),
         child: ElevatedButton(
           onPressed: vm.saving ? null : () => _onSave(context),
@@ -454,7 +460,7 @@ class _SaveButton extends StatelessWidget {
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppColors.radius),
             ),
           ),
           child: vm.saving
@@ -495,7 +501,7 @@ class _SaveButton extends StatelessWidget {
         ),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppColors.radiusSm)),
         backgroundColor: success ? AppColors.success : AppColors.error,
       ),
     );

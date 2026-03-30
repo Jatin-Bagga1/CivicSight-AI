@@ -130,7 +130,10 @@ class WorkerDashboardViewModel extends ChangeNotifier {
       if (uid == null) throw Exception('Not authenticated');
       _workerUid = uid;
 
-      _shiftStatus = await _supabase.getLatestWorkerShiftStatus(uid);
+      // Only fetch shift status on initial load, not on background refreshes
+      if (showLoading) {
+        _shiftStatus = await _supabase.getLatestWorkerShiftStatus(uid);
+      }
       _ensureRealtimeSubscription(uid);
 
       final tasks = await _supabase.getAssignedTasks(uid);

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../Services/auth_service.dart';
 import '../Models/user_model.dart';
 import '../Utils/app_router.dart';
+import '../constants/colors.dart';
 
 /// Placeholder Home Screen - To be expanded with actual features
 class HomeScreen extends StatelessWidget {
@@ -59,9 +60,9 @@ class HomeScreen extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: user.role == UserRole.worker
-                                  ? const Color(0xFF1A4D94)
-                                  : const Color(0xFFF28C38),
-                              borderRadius: BorderRadius.circular(12),
+                                  ? AppColors.primaryBlue
+                                  : AppColors.primaryOrange,
+                              borderRadius: BorderRadius.circular(AppColors.radiusSm),
                             ),
                             child: Text(
                               user.role == UserRole.worker
@@ -129,7 +130,7 @@ class HomeScreen extends StatelessWidget {
                         margin: const EdgeInsets.symmetric(horizontal: 30),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(AppColors.radius),
                           boxShadow: const [
                             BoxShadow(
                               color: Color(0x1A000000),
@@ -174,13 +175,13 @@ class HomeScreen extends StatelessWidget {
                                 style: TextStyle(color: Colors.white),
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1A4D94),
+                                backgroundColor: AppColors.primaryBlue,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 20,
                                   vertical: 12,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(AppColors.radiusSm),
                                 ),
                               ),
                             ),
@@ -202,7 +203,7 @@ class HomeScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppColors.radius)),
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
@@ -212,9 +213,9 @@ class HomeScreen extends StatelessWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1A4D94),
+              backgroundColor: AppColors.primaryBlue,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppColors.radiusSm),
               ),
             ),
             onPressed: () async {
