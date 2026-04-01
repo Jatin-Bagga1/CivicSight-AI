@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CivicSight AI - Product Presentation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --ink-900: #111827;
+            --ink-800: #1f2937;
+            --ink-600: #4b5563;
+            --paper: #f7fafc;
+            --surface: rgba(255, 255, 255, 0.66);
+            --line: rgba(17, 24, 39, 0.12);
+            --brand-blue: #1a4d94;
+            --brand-orange: #f28c38;
+            --brand-green: #2e9e4d;
+            --brand-red: #d64545;
+            --radius: 24px;
+            --radius-sm: 14px;
+            --slide-time: 7000ms;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Space Grotesk", system-ui, sans-serif;
+            color: var(--ink-900);
+            height: 100vh;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 15% 15%, rgba(26, 77, 148, 0.25) 0, transparent 38%),
+                radial-gradient(circle at 86% 20%, rgba(242, 140, 56, 0.25) 0, transparent 38%),
+                radial-gradient(circle at 40% 88%, rgba(46, 158, 77, 0.22) 0, transparent 36%),
+                linear-gradient(120deg, #edf4ff 0%, #fdf6ef 100%);
+        }
+
+        .noise {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image: radial-gradient(rgba(17, 24, 39, 0.05) 0.5px, transparent 0.5px);
+            background-size: 4px 4px;
+            opacity: 0.2;
+            z-index: 0;
+        }
+
+        .shell {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+        }
+
+        .brand {
+            position: fixed;
+            top: 18px;
+            left: 18px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 7px 12px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 6px 16px rgba(17, 24, 39, 0.06);
+            z-index: 30;
+        }
+
+        .brand img {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            object-fit: contain;
+            background: #fff;
+        }
+
+        .brand strong {
+            font-family: "Sora", sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            color: var(--ink-800);
+        }
+
+        #deck {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            padding: clamp(20px, 4vw, 46px);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(24px) scale(0.985);
+            transition:
+                opacity 820ms cubic-bezier(0.22, 1, 0.36, 1),
+                transform 820ms cubic-bezier(0.22, 1, 0.36, 1),
+                visibility 820ms;
+            pointer-events: none;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+            z-index: 5;
+        }
+
+        .card {
+            width: min(1150px, 96vw);
+            min-height: min(680px, 84vh);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: clamp(24px, 4.2vw, 52px);
+            box-shadow:
+                0 24px 50px rgba(17, 24, 39, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.75);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .kicker {
+            font-size: 0.78rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--ink-600);
+            font-weight: 700;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: "Sora", sans-serif;
+            line-height: 1.12;
+            letter-spacing: -0.02em;
+            color: var(--ink-900);
+        }
+
+        h1 {
+            font-size: clamp(2.1rem, 5vw, 4.2rem);
+            max-width: 14ch;
+        }
+
+        h2 {
+            font-size: clamp(1.75rem, 3.2vw, 2.65rem);
+            max-width: 18ch;
+        }
+
+        p {
+            font-size: clamp(1rem, 1.2vw, 1.22rem);
+            line-height: 1.62;
+            color: var(--ink-800);
+            max-width: 70ch;
+        }
+
+        .brandline {
+            background: linear-gradient(90deg, var(--brand-blue), var(--brand-orange));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 6px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 6px;
+        }
+
+        .tile {
+            border: 1px solid var(--line);
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.75);
+            padding: 16px;
+            box-shadow: 0 8px 18px rgba(17, 24, 39, 0.06);
+        }
+
+        .tile h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: var(--brand-blue);
+        }
+
+        .tile p {
+            margin: 0;
+            font-size: 0.98rem;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .pill {
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 999px;
+            padding: 8px 13px;
+            font-size: 0.86rem;
+            color: var(--ink-800);
+            font-weight: 600;
+        }
+
+        .pipeline {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .step {
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.84);
+            padding: 14px;
+            min-height: 130px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .step strong {
+            color: var(--brand-blue);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .step p {
+            margin: 0;
+            font-size: 0.93rem;
+            line-height: 1.45;
+        }
+
+        .mock-shot {
+            border: 1px dashed rgba(26, 77, 148, 0.35);
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, rgba(26, 77, 148, 0.09), rgba(242, 140, 56, 0.12));
+            padding: 16px;
+            min-height: 130px;
+            display: grid;
+            place-content: center;
+            text-align: center;
+            font-size: 0.94rem;
+            color: var(--ink-800);
+            line-height: 1.45;
+            font-weight: 600;
+        }
+
+        .slide.active .reveal {
+            opacity: 0;
+            transform: translateY(18px);
+            animation: rise 700ms forwards;
+        }
+
+        .slide.active .delay-1 { animation-delay: 120ms; }
+        .slide.active .delay-2 { animation-delay: 240ms; }
+        .slide.active .delay-3 { animation-delay: 360ms; }
+        .slide.active .delay-4 { animation-delay: 480ms; }
+
+        @keyframes rise {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ui {
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            z-index: 40;
+        }
+
+        .counter {
+            font-family: "Sora", sans-serif;
+            font-size: 0.95rem;
+            color: var(--ink-800);
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 8px 14px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        button.nav {
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.86);
+            color: var(--ink-900);
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: transform 180ms ease, background 180ms ease;
+        }
+
+        button.nav:hover {
+            transform: translateY(-2px);
+            background: #fff;
+        }
+
+        .timeline {
+            flex: 1;
+            height: 8px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.65);
+            overflow: hidden;
+        }
+
+        .timeline-page {
+            width: 100%;
+            height: 100%;
+            transform-origin: left center;
+            transform: scaleX(0);
+            background: linear-gradient(90deg, var(--brand-blue), var(--brand-orange));
+        }
+
+        .timeline-page.run {
+            animation: elapsed var(--slide-time) linear forwards;
+        }
+
+        @keyframes elapsed {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+
+        @media (max-width: 980px) {
+            .card {
+                min-height: min(730px, 88vh);
+            }
+
+            .grid-2,
+            .grid-3,
+            .pipeline {
+                grid-template-columns: 1fr;
+            }
+
+            .brand {
+                top: 12px;
+                left: 12px;
+            }
+
+            .ui {
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="noise"></div>
+
+    <div class="shell" id="shell">
+        <div class="brand">
+            <img src="assets/images/logo.png" alt="CivicSight AI logo" />
+            <strong>CivicSight AI</strong>
+        </div>
+
+        <main id="deck">
+            <section class="slide active">
+                <article class="card">
+                    <div class="kicker reveal">Capstone Product Deck</div>
+                    <h1 class="reveal delay-1">CivicSight AI:<br><span class="brandline">Citizen Reporting + City Operations</span></h1>
+                    <p class="reveal delay-2">A production-style system combining the Flutter mobile app and admin portal to capture civic issues, prioritize them with AI, assign field workers, and close the loop with transparent status updates.</p>
+                    <div class="pill-row reveal delay-3">
+                        <span class="pill">Mobile: Citizen + Worker</span>
+                        <span class="pill">Admin Portal</span>
+                        <span class="pill">Supabase + Firebase Auth</span>
+                        <span class="pill">AI Triage Pipeline</span>
+                    </div>
+                </article>
+            </section>
+
+            <section class="slide">
+                <article class="card">
+                    <div class="kicker reveal">Problem</div>
+                    <h2 class="reveal delay-1">Municipal issue reporting is fragmented and slow</h2>
+                    <div class="grid-2">
+                        <div class="tile reveal delay-2">
+                            <h3>Citizen Friction</h3>
+                            <p>Users struggle with disconnected forms, low confidence in response times, and poor visibility into progress.</p>
+                        </div>
+                        <div class="tile reveal delay-3">
+                            <h3>Operational Bottlenecks</h3>
+                            <p>Manual triage and unclear severity classification cause delayed assignments and inconsistent service levels.</p>
+                        </div>
+                    </div>
+                    <div class="pill-row reveal delay-4">
+                        <span class="pill">No clear ownership</span>
+                        <span class="pill">Inconsistent prioritization</span>
+                        <span class="pill">Limited accountability</span>
+                    </div>
+                </article>
+            </section>
+
+            <section class="slide">
+                <article class="card">
+                    <div class="kicker reveal">Built Scope</div>
+                    <h2 class="reveal delay-1">What we have implemented so far</h2>
+                    <div class="grid-3">
+                        <div class="tile reveal delay-2">
+                            <h3>Citizen App</h3>
+                            <p>Submit report, add photo + location, track report states, and manage profile/settings in a polished mobile experience.</p>
+                        </div>
+                        <div class="tile reveal delay-3">
+                            <h3>Worker Portal</h3>
+                            <p>Assigned task view, shift status controls, map context, and action-driven status updates for field operations.</p>
+                        </div>
+                        <div class="tile reveal delay-4">
+                            <h3>Admin Portal</h3>
+                            <p>Review reports, assign workers, supervise task flow, and monitor lifecycle states across active incidents.</p>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="slide">
+                <article class="card">
+                    <div class="kicker reveal">Mobile Experience</div>
+                    <h2 class="reveal delay-1">Modernized Flutter UI and smoother interactions</h2>
+                    <div class="grid-2">
+                        <div class="tile reveal delay-2">
+                            <h3>Design System Upgrade</h3>
+                            <p>Unified tokens for radius, shadows, gradients, and animation timing across auth, dashboard, reporting, and settings screens.</p>
+                        </div>
+                        <div class="tile reveal delay-3">
+                            <h3>Motion & Readability</h3>
+                            <p>Slide transitions, staggered report cards, and glass-style sections improve clarity without changing app logic.</p>
+                        </div>
+                    </div>
+                    <div class="pill-row reveal delay-4">
+                        <span class="pill">Login / Signup refresh</span>
+                        <span class="pill">Dashboard transition polish</span>
+                        <span class="pill">Role-aware profile updates</span>
+                    </div>
+                </article>
+            </section>
+
+            <section class="slide">
+                <article class="card">
+                    <div class="kicker reveal">Admin Operations</div>
+                    <h2 class="reveal delay-1">Admin portal closes the loop from intake to assignment</h2>
+                    <div class="grid-2">
+                        <div class="tile reveal delay-2">
+                            <h3>Dashboard & Analytics</h3>
+                            <p>Live KPI cards, weekly report trends, category breakdown, and resolution-time charts give admins a real-time pulse on civic operations.</p>
+                        </div>
+                        <div class="tile reveal delay-2">
+                            <h3>Report Management</h3>
+                            <p>Filter by status, severity, and category. Assign workers, track confidence scores, and move incidents through the pipeline.</p>
+                        </div>
+                        <div class="tile reveal delay-3">
+                            <h3>User & Worker Management</h3>
+                            <p>View citizen accounts and worker cards with auth method, activity dates, and resolved-task counts at a glance.</p>
+                        </div>
+                        <div class="tile reveal delay-3">
+                            <h3>Map View</h3>
+                            <p>Geographic pin overlay colour-coded by severity lets admins spot incident clusters and dispatch nearby workers.</p>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="slide">
+                <article class="card">
+                    <div class="kicker reveal">Intelligence Layer</div>
+                    <h2 class="reveal delay-1">AI triage pipeline for faster prioritization</h2>
+                    <div class="pipeline reveal delay-2">
+                        <div class="step"><strong>Step 1</strong><p>Capture image and metadata in mobile flow.</p></div>
+                        <div class="step"><strong>Step 2</strong><p>Upload and normalize data for backend validation.</p></div>
+                        <div class="step"><strong>Step 3</strong><p>Classify issue category/severity and check quality.</p></div>
+                        <div class="step"><strong>Step 4</strong><p>Store structured report and assignment-ready fields.</p></div>
+                        <div class="step"><strong>Step 5</strong><p>Expose status to admin and worker dashboards.</p></div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="slide">
+                <article class="card">
+                    <div class="kicker reveal">Reliability Improvements</div>
+                    <h2 class="reveal delay-1">Recent bug fixes that improved operational stability</h2>
+                    <div class="grid-2">
+                        <div class="tile reveal delay-2">
+                            <h3>Shift Status Persistence</h3>
+                            <p>Worker shift updates now persist reliably with upsert logic and no realtime overwrite during refresh cycles.</p>
+                        </div>
+                        <div class="tile reveal delay-3">
+                            <h3>Role-Correct Profile UX</h3>
+                            <p>Worker profile now shows worker-specific context and removes irrelevant citizen accent controls.</p>
+                        </div>
+                    </div>
+                    <div class="pill-row reveal delay-4">
+                        <span class="pill">Lower confusion for worker users</span>
+                        <span class="pill">Cleaner field operations flow</span>
+                        <span class="pill">More predictable state handling</span>
+                    </div>
+                </article>
+            </section>
+
+            <section class="slide">
+                <article class="card">
+                    <div class="kicker reveal">Architecture</div>
+                    <h2 class="reveal delay-1">End-to-end stack powering mobile + admin</h2>
+                    <div class="grid-3">
+                        <div class="tile reveal delay-2">
+                            <h3>Frontend</h3>
+                            <p>Flutter mobile app for citizens/workers and a React/Next-style admin interface for city operations.</p>
+                        </div>
+                        <div class="tile reveal delay-3">
+                            <h3>Backend</h3>
+                            <p>Supabase Postgres, APIs, and secure auth integration for data consistency and role-based access.</p>
+                        </div>
+                        <div class="tile reveal delay-4">
+                            <h3>Delivery</h3>
+                            <p>Branch-based workflow with review-first PRs for safer merges across mobile and admin codebases.</p>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="slide">
+                <article class="card">
+                    <div class="kicker reveal">Demo Sequence</div>
+                    <h2 class="reveal delay-1">Suggested walk-through for presentation day</h2>
+                    <div class="grid-2">
+                        <div class="tile reveal delay-2">
+                            <h3>Part A - Mobile</h3>
+                            <p>Create report, inspect status flow, show worker portal map/task views, and demonstrate polished transitions.</p>
+                        </div>
+                        <div class="tile reveal delay-3">
+                            <h3>Part B - Admin</h3>
+                            <p>Open report queue, assign worker, verify status updates and visibility back in worker/mobile context.</p>
+                        </div>
+                    </div>
+                    <div class="pill-row reveal delay-4">
+                        <span class="pill">Auto slides: 8 seconds</span>
+                        <span class="pill">Arrow keys and buttons supported</span>
+                        <span class="pill">Pause on hover/focus</span>
+                    </div>
+                </article>
+            </section>
+
+            <section class="slide">
+                <article class="card">
+                    <div class="kicker reveal">Closing</div>
+                    <h1 class="reveal delay-1">CivicSight AI is now a connected product,<br><span class="brandline">not just a prototype.</span></h1>
+                    <p class="reveal delay-2">We now have a coherent citizen-to-admin-to-worker flow, polished user interfaces, and PR-driven collaboration for maintainable growth.</p>
+                    <div class="pill-row reveal delay-3">
+                        <span class="pill">Ready for live demo</span>
+                        <span class="pill">Ready for partner reviews</span>
+                        <span class="pill">Ready for next sprint</span>
+                    </div>
+                </article>
+            </section>
+        </main>
+
+        <footer class="ui">
+            <div class="counter" id="counter">1 / 10</div>
+            <div class="timeline"><div id="timerBar" class="timeline-page run"></div></div>
+            <div class="controls">
+                <button class="nav" id="prevBtn" aria-label="Previous slide">◀</button>
+                <button class="nav" id="nextBtn" aria-label="Next slide">▶</button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const SLIDE_MS = 7000;
+            const slides = Array.from(document.querySelectorAll(".slide"));
+            const total = slides.length;
+            const counter = document.getElementById("counter");
+            const timerBar = document.getElementById("timerBar");
+            const prevBtn = document.getElementById("prevBtn");
+            const nextBtn = document.getElementById("nextBtn");
+            const shell = document.getElementById("shell");
+
+            let index = 0;
+            let intervalId = null;
+            let paused = false;
+
+            function render() {
+                slides.forEach((slide, i) => {
+                    slide.classList.toggle("active", i === index);
+                });
+                counter.textContent = `${index + 1} / ${total}`;
+                restartProgressAnimation();
+            }
+
+            function restartProgressAnimation() {
+                timerBar.classList.remove("run");
+                void timerBar.offsetWidth;
+                timerBar.classList.add("run");
+            }
+
+            function next() {
+                index = (index + 1) % total;
+                render();
+            }
+
+            function prev() {
+                index = (index - 1 + total) % total;
+                render();
+            }
+
+            function startAuto() {
+                stopAuto();
+                intervalId = setInterval(() => {
+                    if (!paused) next();
+                }, SLIDE_MS);
+            }
+
+            function stopAuto() {
+                if (intervalId) {
+                    clearInterval(intervalId);
+                    intervalId = null;
+                }
+            }
+
+            prevBtn.addEventListener("click", () => {
+                prev();
+                startAuto();
+            });
+
+            nextBtn.addEventListener("click", () => {
+                next();
+                startAuto();
+            });
+
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "ArrowRight" || event.key === " ") {
+                    event.preventDefault();
+                    next();
+                    startAuto();
+                } else if (event.key === "ArrowLeft") {
+                    event.preventDefault();
+                    prev();
+                    startAuto();
+                }
+            });
+
+            shell.addEventListener("mouseenter", () => {
+                paused = true;
+                stopAuto();
+                timerBar.classList.remove("run");
+            });
+
+            shell.addEventListener("mouseleave", () => {
+                paused = false;
+                restartProgressAnimation();
+                startAuto();
+            });
+
+            window.addEventListener("blur", () => {
+                paused = true;
+                stopAuto();
+                timerBar.classList.remove("run");
+            });
+
+            window.addEventListener("focus", () => {
+                paused = false;
+                restartProgressAnimation();
+                startAuto();
+            });
+
+            render();
+            startAuto();
+        });
+    </script>
+</body>
+</html>
