@@ -15,6 +15,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createRemoteJWKSet, jwtVerify } from "https://esm.sh/jose@5.2.0";
 
 // ─── CORS Headers ───
 const corsHeaders = {
@@ -41,16 +42,18 @@ function isRateLimited(ip: string): boolean {
 
 // ─── Firebase Token Verification ───
 const FIREBASE_PROJECT_ID = "civic-sight-ai";
+const JWKS = createRemoteJWKSet(
+  new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com")
+);
 
 async function verifyFirebaseToken(token: string): Promise<boolean> {
   if (!token || token.trim() === "") return false;
   try {
-    const res = await fetch(
-      `https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${token}`
-    );
-    if (!res.ok) return false;
-    const payload = await res.json();
-    return payload.aud === FIREBASE_PROJECT_ID;
+    const { payload } = await jwtVerify(token, JWKS, {
+      issuer: `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`,
+      audience: FIREBASE_PROJECT_ID,
+    });
+    return !!payload.sub;
   } catch {
     return false;
   }
