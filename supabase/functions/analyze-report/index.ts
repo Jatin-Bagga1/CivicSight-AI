@@ -23,6 +23,39 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// ─── Rate Limiter ───
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 5;
+const RATE_WINDOW_MS = 60_000; // 1 minute
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return false;
+  }
+  entry.count++;
+  return entry.count > RATE_LIMIT;
+}
+
+// ─── Firebase Token Verification ───
+const FIREBASE_PROJECT_ID = "civic-sight-ai";
+
+async function verifyFirebaseToken(token: string): Promise<boolean> {
+  if (!token || token.trim() === "") return false;
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${token}`
+    );
+    if (!res.ok) return false;
+    const payload = await res.json();
+    return payload.aud === FIREBASE_PROJECT_ID;
+  } catch {
+    return false;
+  }
+}
+
 // ─── Types ───
 interface Category {
   id: number;
@@ -399,6 +432,27 @@ function validateAndClamp(
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  // ─── Rate Limit Check ───
+  const clientIp =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("cf-connecting-ip") ??
+    "unknown";
+  if (isRateLimited(clientIp)) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Too many requests. Try again in a minute." }),
+      { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  // ─── Auth Check ───
+  const firebaseToken = req.headers.get("x-firebase-token") ?? "";
+  if (!(await verifyFirebaseToken(firebaseToken))) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Unauthorized — valid login required." }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
   try {

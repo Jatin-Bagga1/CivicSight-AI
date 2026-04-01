@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 /// Service to call the Supabase Edge Function for AI report analysis.
@@ -40,11 +41,14 @@ class AIAnalysisService {
         'description': description.trim(),
     });
 
+    final idToken = await FirebaseAuth.instance.currentUser?.getIdToken() ?? '';
+
     final response = await http.post(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $_supabaseAnonKey',
+        'X-Firebase-Token': idToken,
       },
       body: body,
     );
@@ -85,11 +89,14 @@ class AIAnalysisService {
       'location': location,
     });
 
+    final idToken = await FirebaseAuth.instance.currentUser?.getIdToken() ?? '';
+
     final response = await http.post(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $_supabaseAnonKey',
+        'X-Firebase-Token': idToken,
       },
       body: body,
     );
