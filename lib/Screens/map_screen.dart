@@ -21,6 +21,7 @@ class _MapScreenState extends State<MapScreen> {
   LatLng _currentPosition = _torontoDowntown;
   bool _locationLoaded = false;
   Set<Marker> _markers = {};
+  // ignore: unused_field
   List<Map<String, dynamic>> _reports = [];
   Map<String, dynamic>? _selectedReport;
   final SupabaseService _supabase = SupabaseService();

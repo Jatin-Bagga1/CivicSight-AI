@@ -202,6 +202,13 @@ class _WorkerDashboardContentState extends State<_WorkerDashboardContent> {
                     ),
                     // Action icons
                     IconButton(
+                      icon: const Icon(Icons.tune_rounded),
+                      tooltip: 'Category Preferences',
+                      onPressed: () => Navigator.pushNamed(
+                          context, AppRouter.workerCategoryPreferences),
+                      color: isDark ? AppColors.darkText2 : AppColors.darkText,
+                    ),
+                    IconButton(
                       icon: const Icon(Icons.refresh),
                       onPressed: vm.fetchTasks,
                       color: isDark ? AppColors.darkText2 : AppColors.darkText,

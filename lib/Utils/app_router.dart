@@ -10,6 +10,7 @@ import '../Screens/citizen_profile_screen.dart';
 
 import '../Screens/Worker/worker_dashboard_screen.dart';
 import '../Screens/Worker/task_detail_screen.dart';
+import '../Screens/Worker/worker_category_preferences_screen.dart';
 
 class AppRouter {
   static const String login = '/login';
@@ -22,6 +23,7 @@ class AppRouter {
   static const String citizenProfile = '/citizen-profile';
   static const String workerDashboard = '/worker-dashboard';
   static const String taskDetail = '/task-detail';
+  static const String workerCategoryPreferences = '/worker-category-preferences';
   
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -55,6 +57,9 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => TaskDetailScreen(reportId: reportId ?? ''),
         );
+      case workerCategoryPreferences:
+        return MaterialPageRoute(
+            builder: (_) => const WorkerCategoryPreferencesScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
