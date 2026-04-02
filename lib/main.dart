@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -8,6 +9,7 @@ import 'Services/auth_service.dart';
 import 'Services/theme_provider.dart';
 import 'Services/map_settings_provider.dart';
 import 'Services/accent_color_provider.dart';
+import 'Services/notification_service.dart';
 import 'Utils/app_router.dart';
 import 'constants/app_theme.dart';
 
@@ -20,6 +22,9 @@ void main() async {
   // Initialize Firebase
   await Firebase.initializeApp();
 
+  // Register background message handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
   // Initialize Supabase
   await Supabase.initialize(
     url: 'https://lcyryfzfiduslebpffje.supabase.co', 
@@ -29,6 +34,18 @@ void main() async {
 
   // Initialize Auth Service and restore session if exists
   await AuthService().initialize();
+
+  // Initialize push notifications
+  await NotificationService().initialize();
+
+  // Save FCM token if worker is already logged in
+  final auth = AuthService();
+  if (auth.isLoggedIn && auth.currentUser?.role.name == 'worker') {
+    final uid = auth.currentUser?.uid;
+    if (uid != null) {
+      NotificationService().saveTokenForUser(uid);
+    }
+  }
 
   // Set preferred orientations
   SystemChrome.setPreferredOrientations([
@@ -94,6 +111,7 @@ class _CivicSightAppState extends State<CivicSightApp> {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
           return MaterialApp(
+            navigatorKey: NotificationService.navigatorKey,
             debugShowCheckedModeBanner: false,
             title: 'CivicSight AI',
             theme: AppTheme.light,
