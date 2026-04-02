@@ -268,4 +268,57 @@ class SupabaseService {
         .update(data)
         .eq('citizen_id', uid);
   }
+
+  // ════════════════════════════════════════════
+  // ─── COMMENTS OPERATIONS ───
+  // ════════════════════════════════════════════
+
+  /// Fetch all comments for a report, newest last.
+  Future<List<Map<String, dynamic>>> getComments(String reportId) async {
+    final response = await _client
+        .from('comments')
+        .select()
+        .eq('report_id', reportId)
+        .order('created_at', ascending: true);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Add a new comment to a report.
+  Future<Map<String, dynamic>> addComment({
+    required String reportId,
+    required String userId,
+    required String content,
+    bool isInternal = false,
+  }) async {
+    final response = await _client.from('comments').insert({
+      'report_id': reportId,
+      'user_id': userId,
+      'content': content,
+      'is_internal': isInternal,
+    }).select().single();
+    return response;
+  }
+
+  /// Realtime stream for comments on a specific report.
+  RealtimeChannel subscribeToComments(
+    String reportId,
+    void Function(Map<String, dynamic> newComment) onInsert,
+  ) {
+    return _client
+        .channel('comments:$reportId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'comments',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'report_id',
+            value: reportId,
+          ),
+          callback: (payload) {
+            onInsert(payload.newRecord);
+          },
+        )
+        .subscribe();
+  }
 }

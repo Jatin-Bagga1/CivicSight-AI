@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../ViewModels/worker_task_detail_view_model.dart';
+import '../../Services/supabase_service.dart';
 import '../../constants/colors.dart';
 
 class TaskDetailScreen extends StatelessWidget {
@@ -26,7 +29,103 @@ class _TaskDetailContent extends StatefulWidget {
 }
 
 class _TaskDetailContentState extends State<_TaskDetailContent> {
-  
+  final SupabaseService _supabaseService = SupabaseService();
+  final TextEditingController _commentController = TextEditingController();
+  final ScrollController _commentScrollController = ScrollController();
+  List<Map<String, dynamic>> _comments = [];
+  bool _loadingComments = false;
+  bool _sendingComment = false;
+  RealtimeChannel? _commentChannel;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  void _tryLoadComments(WorkerTaskDetailViewModel vm) {
+    final reportId = vm.taskDetails?['id'] as String? ?? '';
+    if (reportId.isNotEmpty && _comments.isEmpty && !_loadingComments) {
+      _loadComments(reportId);
+    }
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    _commentScrollController.dispose();
+    _commentChannel?.unsubscribe();
+    super.dispose();
+  }
+
+  Future<void> _loadComments(String reportId) async {
+    if (reportId.isEmpty) return;
+    setState(() => _loadingComments = true);
+    try {
+      final comments = await _supabaseService.getComments(reportId);
+      if (mounted) {
+        setState(() {
+          _comments = comments;
+          _loadingComments = false;
+        });
+        _scrollToBottom();
+        _subscribeToComments(reportId);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingComments = false);
+    }
+  }
+
+  void _subscribeToComments(String reportId) {
+    _commentChannel?.unsubscribe();
+    _commentChannel = _supabaseService.subscribeToComments(
+      reportId,
+      (newComment) {
+        if (mounted) {
+          setState(() => _comments.add(newComment));
+          _scrollToBottom();
+        }
+      },
+    );
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_commentScrollController.hasClients) {
+        _commentScrollController.animateTo(
+          _commentScrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _sendComment(String reportId) async {
+    final text = _commentController.text.trim();
+    if (text.isEmpty || reportId.isEmpty) return;
+
+    final firebaseUid = FirebaseAuth.instance.currentUser?.uid;
+    if (firebaseUid == null) return;
+
+    setState(() => _sendingComment = true);
+    try {
+      await _supabaseService.addComment(
+        reportId: reportId,
+        userId: firebaseUid,
+        content: text,
+      );
+      _commentController.clear();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sendingComment = false);
+    }
+  }
+
   void _showImageSourceSheet(WorkerTaskDetailViewModel vm) {
     showModalBottomSheet(
       context: context,
@@ -152,6 +251,9 @@ class _TaskDetailContentState extends State<_TaskDetailContent> {
     if (vm.taskDetails == null) {
       return const Center(child: Text('Task not found.'));
     }
+
+    // Load comments once task details are available
+    _tryLoadComments(vm);
 
     final task = vm.taskDetails!;
     final reportNumber = task['report_number'] ?? '-';
@@ -313,6 +415,11 @@ class _TaskDetailContentState extends State<_TaskDetailContent> {
                 ),
 
                 const SizedBox(height: 32),
+
+                // ── Comments Section ──
+                _buildCommentsSection(task['id'] as String? ?? '', isDark),
+
+                const SizedBox(height: 32),
                 
                 // Proof Image Section (if resolved or attempting to resolve)
                 if (isResolved && proofImageUrl != null) ...[
@@ -440,6 +547,254 @@ class _TaskDetailContentState extends State<_TaskDetailContent> {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildCommentsSection(String reportId, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.chat_bubble_outline, size: 18, color: AppColors.primaryBlue),
+            const SizedBox(width: 8),
+            const Text(
+              'Comments',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(width: 8),
+            if (_comments.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${_comments.length}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryBlue,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Comments list
+        Container(
+          constraints: const BoxConstraints(maxHeight: 300),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkCard : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isDark ? Colors.white12 : Colors.grey.shade200,
+            ),
+          ),
+          child: _loadingComments
+              ? const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                )
+              : _comments.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.forum_outlined, size: 32, color: Colors.grey.shade400),
+                            const SizedBox(height: 8),
+                            Text(
+                              'No comments yet',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Start a conversation with admin',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _commentScrollController,
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: _comments.length,
+                      itemBuilder: (_, index) =>
+                          _buildCommentBubble(_comments[index], isDark),
+                    ),
+        ),
+
+        const SizedBox(height: 10),
+
+        // Input row
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _commentController,
+                maxLines: 1,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => _sendComment(reportId),
+                decoration: InputDecoration(
+                  hintText: 'Type a message...',
+                  hintStyle: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade500,
+                  ),
+                  filled: true,
+                  fillColor: isDark ? AppColors.darkCard : Colors.white,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: const BorderSide(
+                      color: AppColors.primaryBlue,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Material(
+              color: AppColors.primaryBlue,
+              borderRadius: BorderRadius.circular(24),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(24),
+                onTap: _sendingComment ? null : () => _sendComment(reportId),
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  child: _sendingComment
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Icon(Icons.send_rounded,
+                          color: Colors.white, size: 20),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCommentBubble(Map<String, dynamic> comment, bool isDark) {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final isWorker = comment['user_id'] == currentUid;
+    final authorName = isWorker ? 'You' : 'Admin';
+    final message = comment['content'] as String? ?? '';
+    final createdAt = comment['created_at'] as String?;
+
+    String timeStr = '';
+    if (createdAt != null) {
+      final dt = DateTime.tryParse(createdAt);
+      if (dt != null) {
+        final local = dt.toLocal();
+        timeStr =
+            '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+      }
+    }
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        isWorker ? 40 : 10,
+        4,
+        isWorker ? 10 : 40,
+        4,
+      ),
+      child: Align(
+        alignment: isWorker ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isWorker
+                ? AppColors.primaryBlue
+                : (isDark ? Colors.grey.shade800 : Colors.white),
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(16),
+              topRight: const Radius.circular(16),
+              bottomLeft: Radius.circular(isWorker ? 16 : 4),
+              bottomRight: Radius.circular(isWorker ? 4 : 16),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment:
+                isWorker ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              if (!isWorker)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    authorName,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AppColors.primaryBlue : AppColors.primaryBlue,
+                    ),
+                  ),
+                ),
+              Text(
+                message,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isWorker
+                      ? Colors.white
+                      : (isDark ? Colors.white : Colors.black87),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                timeStr,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isWorker
+                      ? Colors.white70
+                      : Colors.grey.shade500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
