@@ -271,63 +271,55 @@ class SupabaseService {
   }
 
   // ════════════════════════════════════════════
-  // ─── CATEGORY OPERATIONS ───
+  // ─── COMMENTS OPERATIONS ───
   // ════════════════════════════════════════════
 
-  /// Fetch all active categories, ordered by category_group then name.
-  Future<List<Category>> getAllCategories() async {
+  /// Fetch all comments for a report, newest last.
+  Future<List<Map<String, dynamic>>> getComments(String reportId) async {
     final response = await _client
-        .from('categories')
+        .from('comments')
         .select()
-        .eq('is_active', true)
-        .order('category_group')
-        .order('name');
-
-    return (response as List)
-        .map((row) => Category.fromSupabase(row as Map<String, dynamic>))
-        .toList();
+        .eq('report_id', reportId)
+        .order('created_at', ascending: true);
+    return List<Map<String, dynamic>>.from(response);
   }
 
-  // ════════════════════════════════════════════
-  // ─── WORKER CATEGORY PREFERENCE OPERATIONS ───
-  // ════════════════════════════════════════════
-
-  /// Fetch all category preferences for a worker.
-  Future<List<WorkerCategoryPreference>> getWorkerCategoryPreferences(
-      String workerId) async {
-    final response = await _client
-        .from('worker_category_preferences')
-        .select()
-        .eq('worker_id', workerId)
-        .order('priority_rank');
-
-    return (response as List)
-        .map((row) =>
-            WorkerCategoryPreference.fromSupabase(row as Map<String, dynamic>))
-        .toList();
+  /// Add a new comment to a report.
+  Future<Map<String, dynamic>> addComment({
+    required String reportId,
+    required String userId,
+    required String content,
+    bool isInternal = false,
+  }) async {
+    final response = await _client.from('comments').insert({
+      'report_id': reportId,
+      'user_id': userId,
+      'content': content,
+      'is_internal': isInternal,
+    }).select().single();
+    return response;
   }
 
-  /// Replace all category preferences for a worker.
-  /// Deletes existing preferences and inserts the new set.
-  Future<void> saveWorkerCategoryPreferences(
-    String workerId,
-    List<int> categoryIds,
-  ) async {
-    // Delete existing preferences
-    await _client
-        .from('worker_category_preferences')
-        .delete()
-        .eq('worker_id', workerId);
-
-    // Insert new preferences
-    if (categoryIds.isNotEmpty) {
-      final rows = categoryIds.asMap().entries.map((entry) => {
-            'worker_id': workerId,
-            'category_id': entry.value,
-            'priority_rank': entry.key + 1,
-          }).toList();
-
-      await _client.from('worker_category_preferences').insert(rows);
-    }
+  /// Realtime stream for comments on a specific report.
+  RealtimeChannel subscribeToComments(
+    String reportId,
+    void Function(Map<String, dynamic> newComment) onInsert,
+  ) {
+    return _client
+        .channel('comments:$reportId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'comments',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'report_id',
+            value: reportId,
+          ),
+          callback: (payload) {
+            onInsert(payload.newRecord);
+          },
+        )
+        .subscribe();
   }
 }

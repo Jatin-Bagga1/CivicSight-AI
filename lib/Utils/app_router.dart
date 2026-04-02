@@ -8,7 +8,7 @@ import '../Screens/map_screen.dart';
 import '../Screens/dashboard_screen.dart';
 import '../Screens/citizen_profile_screen.dart';
 
-import '../Screens/Worker/worker_dashboard_screen.dart';
+import '../Screens/Worker/worker_dashboard_shell.dart';
 import '../Screens/Worker/task_detail_screen.dart';
 import '../Screens/Worker/worker_category_preferences_screen.dart';
 
@@ -50,7 +50,7 @@ class AppRouter {
       case citizenProfile:
         return MaterialPageRoute(builder: (_) => const CitizenProfileScreen());
       case workerDashboard:
-        return MaterialPageRoute(builder: (_) => const WorkerDashboardScreen());
+        return MaterialPageRoute(builder: (_) => const WorkerDashboardShell());
       case taskDetail:
         // Accept reportId as argument
         final reportId = settings.arguments as String?;
