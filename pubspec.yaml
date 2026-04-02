@@ -41,6 +41,8 @@ dependencies:
   # Firebase
   firebase_core: ^4.4.0
   firebase_auth: ^6.1.4
+  firebase_messaging: ^16.1.1
+  flutter_local_notifications: ^18.0.1
 
   # Social Sign-In
   google_sign_in: ^6.2.2

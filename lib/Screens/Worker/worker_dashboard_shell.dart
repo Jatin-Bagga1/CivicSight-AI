@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../ViewModels/worker_dashboard_view_model.dart';
 import '../../Services/auth_service.dart';
+import '../../Services/notification_service.dart';
 import '../../Utils/app_router.dart';
 import '../../constants/colors.dart';
 import 'worker_home_screen.dart';
@@ -31,6 +32,16 @@ class _WorkerShellContent extends StatefulWidget {
 class _WorkerShellContentState extends State<_WorkerShellContent> {
   int _currentIndex = 0;
   int _previousIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Save FCM token for push notifications
+    final uid = AuthService().currentUser?.uid;
+    if (uid != null) {
+      NotificationService().saveTokenForUser(uid);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
