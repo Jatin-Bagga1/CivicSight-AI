@@ -4,9 +4,9 @@ import '../../ViewModels/worker_dashboard_view_model.dart';
 import '../../Utils/app_router.dart';
 import '../../constants/colors.dart';
 
-/// Separate screen for the worker's assigned task list with filters.
-class WorkerAssignedTasksScreen extends StatelessWidget {
-  const WorkerAssignedTasksScreen({super.key});
+/// History screen showing completed/closed tasks with filters.
+class WorkerHistoryScreen extends StatelessWidget {
+  const WorkerHistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -22,48 +22,15 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (vm.errorMessage != null) {
+    if (!vm.hasHistory) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+            Icon(Icons.history_rounded, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             Text(
-              'Failed to load tasks',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              vm.errorMessage!,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: vm.fetchTasks,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (vm.assignedTasks.isEmpty && !vm.hasTasks) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle_outline,
-                size: 64, color: AppColors.success),
-            const SizedBox(height: 16),
-            Text(
-              'You have no tasks yet',
+              'No task history yet',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -72,7 +39,7 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Enjoy your break!',
+              'Completed tasks will appear here.',
               style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
             ),
           ],
@@ -90,7 +57,7 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Assigned Tasks (${vm.assignedTasks.length})',
+                'History (${vm.historyTasks.length})',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -113,120 +80,73 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              SizedBox(
-                width: 150,
-                child: DropdownButtonFormField<String>(
-                  initialValue: vm.statusFilter,
-                  decoration: InputDecoration(
-                    labelText: 'Status',
-                    labelStyle: TextStyle(
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                    ),
-                    isDense: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppColors.radiusSm),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppColors.radiusSm),
-                      borderSide: BorderSide(
-                        color: isDark ? Colors.white24 : Colors.grey.shade300,
-                      ),
-                    ),
-                  ),
-                  dropdownColor: isDark ? AppColors.darkCard : Colors.white,
-                  style: TextStyle(
-                    color: isDark ? AppColors.darkText2 : AppColors.darkText,
-                    fontSize: 14,
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('All')),
-                    DropdownMenuItem(
-                        value: 'assigned', child: Text('Assigned')),
-                    DropdownMenuItem(
-                        value: 'in_progress', child: Text('In Progress')),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) vm.updateStatusFilter(value);
-                  },
-                ),
+              // Time filter
+              _buildDropdown(
+                width: 140,
+                label: 'Time',
+                value: vm.historyTimeFilter,
+                isDark: isDark,
+                items: const [
+                  DropdownMenuItem(value: 'all', child: Text('All Time')),
+                  DropdownMenuItem(value: 'today', child: Text('Today')),
+                  DropdownMenuItem(value: 'week', child: Text('This Week')),
+                  DropdownMenuItem(value: 'month', child: Text('This Month')),
+                  DropdownMenuItem(value: 'quarter', child: Text('3 Months')),
+                ],
+                onChanged: (v) {
+                  if (v != null) vm.updateHistoryTimeFilter(v);
+                },
               ),
-              SizedBox(
-                width: 150,
-                child: DropdownButtonFormField<String>(
-                  initialValue: vm.severityFilter,
-                  decoration: InputDecoration(
-                    labelText: 'Severity',
-                    labelStyle: TextStyle(
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                    ),
-                    isDense: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppColors.radiusSm),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppColors.radiusSm),
-                      borderSide: BorderSide(
-                        color: isDark ? Colors.white24 : Colors.grey.shade300,
-                      ),
-                    ),
+
+              // Category filter
+              _buildDropdown(
+                width: 160,
+                label: 'Category',
+                value: vm.historyCategoryFilter,
+                isDark: isDark,
+                items: [
+                  const DropdownMenuItem(value: 'all', child: Text('All Categories')),
+                  ...vm.historyCategories.map(
+                    (cat) => DropdownMenuItem(value: cat, child: Text(cat)),
                   ),
-                  dropdownColor: isDark ? AppColors.darkCard : Colors.white,
-                  style: TextStyle(
-                    color: isDark ? AppColors.darkText2 : AppColors.darkText,
-                    fontSize: 14,
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('All')),
-                    DropdownMenuItem(
-                        value: 'high', child: Text('High (4-5)')),
-                    DropdownMenuItem(
-                        value: 'medium', child: Text('Medium (3)')),
-                    DropdownMenuItem(
-                        value: 'low', child: Text('Low (1-2)')),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) vm.updateSeverityFilter(value);
-                  },
-                ),
+                ],
+                onChanged: (v) {
+                  if (v != null) vm.updateHistoryCategoryFilter(v);
+                },
               ),
-              SizedBox(
-                width: 170,
-                child: DropdownButtonFormField<String>(
-                  initialValue: vm.dueFilter,
-                  decoration: InputDecoration(
-                    labelText: 'Due Date',
-                    labelStyle: TextStyle(
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                    ),
-                    isDense: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppColors.radiusSm),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppColors.radiusSm),
-                      borderSide: BorderSide(
-                        color: isDark ? Colors.white24 : Colors.grey.shade300,
-                      ),
-                    ),
-                  ),
-                  dropdownColor: isDark ? AppColors.darkCard : Colors.white,
-                  style: TextStyle(
-                    color: isDark ? AppColors.darkText2 : AppColors.darkText,
-                    fontSize: 14,
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('All')),
-                    DropdownMenuItem(
-                        value: 'today', child: Text('Due Today')),
-                    DropdownMenuItem(
-                        value: 'overdue', child: Text('Overdue')),
-                    DropdownMenuItem(
-                        value: 'next3', child: Text('Next 3 Days')),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) vm.updateDueFilter(value);
-                  },
-                ),
+
+              // Severity filter
+              _buildDropdown(
+                width: 140,
+                label: 'Severity',
+                value: vm.historySeverityFilter,
+                isDark: isDark,
+                items: const [
+                  DropdownMenuItem(value: 'all', child: Text('All')),
+                  DropdownMenuItem(value: 'high', child: Text('High (4-5)')),
+                  DropdownMenuItem(value: 'medium', child: Text('Medium (3)')),
+                  DropdownMenuItem(value: 'low', child: Text('Low (1-2)')),
+                ],
+                onChanged: (v) {
+                  if (v != null) vm.updateHistorySeverityFilter(v);
+                },
+              ),
+
+              // Status filter
+              _buildDropdown(
+                width: 140,
+                label: 'Status',
+                value: vm.historyStatusFilter,
+                isDark: isDark,
+                items: const [
+                  DropdownMenuItem(value: 'all', child: Text('All')),
+                  DropdownMenuItem(value: 'completed', child: Text('Completed')),
+                  DropdownMenuItem(value: 'resolved', child: Text('Resolved')),
+                  DropdownMenuItem(value: 'closed', child: Text('Closed')),
+                ],
+                onChanged: (v) {
+                  if (v != null) vm.updateHistoryStatusFilter(v);
+                },
               ),
             ],
           ),
@@ -235,7 +155,7 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
 
         // ── Task Cards ──
         Expanded(
-          child: vm.assignedTasks.isEmpty
+          child: vm.historyTasks.isEmpty
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -251,23 +171,17 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
                           color: isDark ? Colors.white70 : Colors.black54,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Try changing status, severity, or due-date filters.',
-                        style: TextStyle(
-                            fontSize: 13, color: Colors.grey.shade500),
-                      ),
                     ],
                   ),
                 )
               : RefreshIndicator(
                   onRefresh: vm.fetchTasks,
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    itemCount: vm.assignedTasks.length,
-                    itemBuilder: (_, index) => _buildReportCard(
-                        context, vm.assignedTasks[index], isDark),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    itemCount: vm.historyTasks.length,
+                    itemBuilder: (_, index) =>
+                        _buildHistoryCard(context, vm.historyTasks[index], isDark),
                   ),
                 ),
         ),
@@ -275,22 +189,55 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
     );
   }
 
-  // ── Report card (identical to original) ──
+  Widget _buildDropdown({
+    required double width,
+    required String label,
+    required String value,
+    required bool isDark,
+    required List<DropdownMenuItem<String>> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return SizedBox(
+      width: width,
+      child: DropdownButtonFormField<String>(
+        value: value,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+          ),
+          isDense: true,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppColors.radiusSm),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppColors.radiusSm),
+            borderSide: BorderSide(
+              color: isDark ? Colors.white24 : Colors.grey.shade300,
+            ),
+          ),
+        ),
+        dropdownColor: isDark ? AppColors.darkCard : Colors.white,
+        style: TextStyle(
+          color: isDark ? AppColors.darkText2 : AppColors.darkText,
+          fontSize: 14,
+        ),
+        items: items,
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  // ── History card ──
 
   Color _statusColor(String? status) {
     switch (status) {
-      case 'open':
-      case 'assigned':
-        return AppColors.info;
-      case 'in_progress':
-        return AppColors.warning;
       case 'completed':
-      case 'resolved':
         return AppColors.success;
+      case 'resolved':
+        return AppColors.primaryBlue;
       case 'closed':
         return Colors.grey;
-      case 'pending':
-        return Colors.blueGrey;
       default:
         return Colors.grey;
     }
@@ -331,15 +278,15 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReportCard(
+  Widget _buildHistoryCard(
       BuildContext context, Map<String, dynamic> report, bool isDark) {
     final reportId = report['id'] as String? ?? '';
     final reportNumber = report['report_number'] ?? '-';
-    final status = report['status'] as String? ?? 'assigned';
+    final status = report['status'] as String? ?? 'completed';
     final category = report['ai_category_name'] as String? ?? 'Unknown';
     final severity = (report['ai_severity'] as num?)?.toInt() ?? 0;
     final description = report['description'] as String? ?? '';
-    final reportedAt = report['reported_at'] as String?;
+    final completedAt = report['completed_at'] as String?;
 
     // Primary image
     final images = report['report_images'] as List? ?? [];
@@ -357,13 +304,14 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
       address = locations.first['formatted_address'] as String?;
     }
 
-    // Date
+    // Completed date
     String dateStr = '';
-    if (reportedAt != null) {
-      final dt = DateTime.tryParse(reportedAt);
+    if (completedAt != null) {
+      final dt = DateTime.tryParse(completedAt);
       if (dt != null) {
+        final local = dt.toLocal();
         dateStr =
-            '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+            '${local.day}/${local.month}/${local.year} ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
       }
     }
 
@@ -381,12 +329,6 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
           color: isDark ? AppColors.darkCard : Colors.white,
           borderRadius: BorderRadius.circular(AppColors.radius),
           boxShadow: AppColors.cardShadow(isDark),
-          border: Border.all(
-            color: (status == 'resolved' || status == 'completed')
-                ? AppColors.success.withOpacity(0.5)
-                : Colors.transparent,
-            width: 1.5,
-          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,8 +378,7 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
               )
             else
               Padding(
-                padding:
-                    const EdgeInsets.only(top: 12, left: 14, right: 14),
+                padding: const EdgeInsets.only(top: 12, left: 14, right: 14),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -468,7 +409,8 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: isDark ? AppColors.darkText2 : AppColors.darkText,
+                            color:
+                                isDark ? AppColors.darkText2 : AppColors.darkText,
                           ),
                         ),
                       ),
@@ -511,11 +453,8 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
                   if (address != null)
                     Row(
                       children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 14,
-                          color: Colors.grey.shade500,
-                        ),
+                        Icon(Icons.location_on,
+                            size: 14, color: Colors.grey.shade500),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -523,9 +462,7 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
-                            ),
+                                fontSize: 12, color: Colors.grey.shade500),
                           ),
                         ),
                       ],
@@ -533,13 +470,18 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
 
                   const SizedBox(height: 6),
 
-                  // Date
-                  Text(
-                    dateStr,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade500,
-                    ),
+                  // Completed date
+                  Row(
+                    children: [
+                      Icon(Icons.check_circle_outline,
+                          size: 14, color: Colors.grey.shade500),
+                      const SizedBox(width: 4),
+                      Text(
+                        dateStr.isNotEmpty ? 'Completed: $dateStr' : '',
+                        style: TextStyle(
+                            fontSize: 11, color: Colors.grey.shade500),
+                      ),
+                    ],
                   ),
                 ],
               ),

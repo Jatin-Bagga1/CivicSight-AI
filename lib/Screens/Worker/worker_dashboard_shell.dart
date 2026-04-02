@@ -8,6 +8,7 @@ import '../../Utils/app_router.dart';
 import '../../constants/colors.dart';
 import 'worker_home_screen.dart';
 import 'worker_assigned_tasks_screen.dart';
+import 'worker_history_screen.dart';
 import '../../Screens/settings_screen.dart';
 
 class WorkerDashboardShell extends StatelessWidget {
@@ -52,6 +53,7 @@ class _WorkerShellContentState extends State<_WorkerShellContent> {
     final screens = const [
       WorkerHomeScreen(),
       WorkerAssignedTasksScreen(),
+      WorkerHistoryScreen(),
       SettingsScreen(),
     ];
 
@@ -131,6 +133,11 @@ class _WorkerShellContentState extends State<_WorkerShellContent> {
               icon: Icon(Icons.assignment_outlined),
               activeIcon: Icon(Icons.assignment),
               label: 'Tasks',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.history_rounded),
+              activeIcon: Icon(Icons.history),
+              label: 'History',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.settings_outlined),
@@ -234,6 +241,13 @@ class _WorkerShellContentState extends State<_WorkerShellContent> {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.tune_rounded, size: 22),
+            tooltip: 'Job Priorities',
+            onPressed: () => Navigator.pushNamed(
+                context, AppRouter.workerCategoryPreferences),
+            color: isDark ? AppColors.darkText2 : AppColors.darkText,
           ),
           IconButton(
             icon: const Icon(Icons.logout_rounded),

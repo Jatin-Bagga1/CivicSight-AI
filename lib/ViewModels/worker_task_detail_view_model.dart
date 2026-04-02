@@ -185,10 +185,10 @@ class WorkerTaskDetailViewModel extends ChangeNotifier {
       // 3. Update status using worker assignments workflow
       await _supabase.updateTaskStatus(
         _reportId,
-        'resolved',
+        'completed',
         workerId: uid,
         note: _updateNote.trim().isEmpty
-          ? 'Resolved with proof image'
+          ? 'Completed with proof image'
             : _updateNote.trim(),
         proofImageUrl: imageUrl,
         latitude: latitude,

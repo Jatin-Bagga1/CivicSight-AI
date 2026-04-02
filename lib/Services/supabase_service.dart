@@ -103,7 +103,7 @@ class SupabaseService {
     return List<Map<String, dynamic>>.from(response);
   }
 
-  /// Fetch all tasks assigned to a specific worker
+  /// Fetch all tasks assigned to a specific worker (active only — no closed).
   Future<List<Map<String, dynamic>>> getAssignedTasks(String workerId) async {
     debugPrint('getAssignedTasks: querying worker_assignments for worker_id=$workerId');
     final response = await _client
@@ -112,7 +112,7 @@ class SupabaseService {
           'assignment_status, assigned_at, started_at, completed_at, report:reports(*, report_locations(*), report_images(*))',
         )
         .eq('worker_id', workerId)
-        .inFilter('assignment_status', ['assigned', 'in_progress', 'completed', 'resolved'])
+        .inFilter('assignment_status', ['assigned', 'in_progress'])
         .order('assigned_at', ascending: false);
 
     final rows = List<Map<String, dynamic>>.from(response);
@@ -122,11 +122,37 @@ class SupabaseService {
           final report = row['report'];
           if (report is! Map<String, dynamic>) return null;
 
-          // The worker portal UI expects status on report payload.
+          // Use assignment_status as the display status.
           final assignmentStatus = row['assignment_status'] as String?;
-          report['status'] = assignmentStatus == 'completed'
-              ? 'resolved'
-              : (assignmentStatus ?? report['status']);
+          report['status'] = assignmentStatus ?? report['status'];
+          report['assigned_at'] = row['assigned_at'];
+          report['started_at'] = row['started_at'];
+          report['completed_at'] = row['completed_at'];
+          return report;
+        })
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  /// Fetch task history for a worker (completed, resolved, closed).
+  Future<List<Map<String, dynamic>>> getWorkerTaskHistory(String workerId) async {
+    final response = await _client
+        .from('worker_assignments')
+        .select(
+          'assignment_status, assigned_at, started_at, completed_at, report:reports(*, report_locations(*), report_images(*))',
+        )
+        .eq('worker_id', workerId)
+        .inFilter('assignment_status', ['completed', 'resolved', 'closed'])
+        .order('completed_at', ascending: false);
+
+    final rows = List<Map<String, dynamic>>.from(response);
+    return rows
+        .map((row) {
+          final report = row['report'];
+          if (report is! Map<String, dynamic>) return null;
+
+          final assignmentStatus = row['assignment_status'] as String?;
+          report['status'] = assignmentStatus ?? report['status'];
           report['assigned_at'] = row['assigned_at'];
           report['started_at'] = row['started_at'];
           report['completed_at'] = row['completed_at'];
@@ -157,13 +183,17 @@ class SupabaseService {
         .single();
 
     final assignmentId = assignment['id'];
-    final normalizedStatus = status == 'completed' ? 'resolved' : status;
+
+    // Both tables use the same status; only admin should set 'resolved'
+    final assignmentStatus =
+        (status == 'completed' || status == 'resolved') ? 'completed' : status;
+    final reportStatus = status;
 
     final assignmentUpdate = <String, dynamic>{
-      'assignment_status': normalizedStatus,
+      'assignment_status': assignmentStatus,
       'last_update_at': now,
-      if (normalizedStatus == 'in_progress') 'started_at': now,
-      if (normalizedStatus == 'resolved') 'completed_at': now,
+      if (assignmentStatus == 'in_progress') 'started_at': now,
+      if (assignmentStatus == 'completed') 'completed_at': now,
       if (note != null && note.trim().isNotEmpty) 'worker_note': note.trim(),
     };
 
@@ -173,9 +203,9 @@ class SupabaseService {
         .eq('id', assignmentId);
 
     final reportUpdate = <String, dynamic>{
-      'status': normalizedStatus,
+      'status': reportStatus,
       'updated_at': now,
-      if (normalizedStatus == 'resolved') 'resolved_at': now,
+      if (reportStatus == 'resolved') 'resolved_at': now,
     };
 
     await _client.from('reports').update(reportUpdate).eq('id', reportId);
@@ -353,9 +383,10 @@ class SupabaseService {
         .toList();
   }
 
-  /// Replace a worker's category preferences with the given category IDs.
+  /// Replace a worker's category preferences.
+  /// [priorities] maps categoryId → priorityRank (1-based).
   Future<void> saveWorkerCategoryPreferences(
-      String workerId, List<int> categoryIds) async {
+      String workerId, Map<int, int> priorities) async {
     // Delete existing preferences
     await _client
         .from('worker_category_preferences')
@@ -363,14 +394,12 @@ class SupabaseService {
         .eq('worker_id', workerId);
 
     // Insert new preferences
-    if (categoryIds.isNotEmpty) {
-      final rows = categoryIds
-          .asMap()
-          .entries
+    if (priorities.isNotEmpty) {
+      final rows = priorities.entries
           .map((e) => {
                 'worker_id': workerId,
-                'category_id': e.value,
-                'priority_rank': e.key + 1,
+                'category_id': e.key,
+                'priority_rank': e.value,
               })
           .toList();
       await _client.from('worker_category_preferences').insert(rows);
