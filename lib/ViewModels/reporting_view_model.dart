@@ -22,6 +22,21 @@ import '../Services/location_service.dart';
 ///      c) If valid, store report + location + image via store-report edge function
 ///      d) If rejected, delete image from Firebase Storage
 class ReportingViewModel extends ChangeNotifier {
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) {
+      super.notifyListeners();
+    }
+  }
+
   final ImagePicker _picker = ImagePicker();
   final ImageStorageService _imageService = ImageStorageService();
   final AIAnalysisService _aiService = AIAnalysisService();

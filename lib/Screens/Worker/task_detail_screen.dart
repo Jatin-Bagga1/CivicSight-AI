@@ -35,6 +35,7 @@ class _TaskDetailContentState extends State<_TaskDetailContent> {
   List<Map<String, dynamic>> _comments = [];
   bool _loadingComments = false;
   bool _sendingComment = false;
+  bool _commentsLoaded = false;
   RealtimeChannel? _commentChannel;
 
   @override
@@ -43,9 +44,11 @@ class _TaskDetailContentState extends State<_TaskDetailContent> {
   }
 
   void _tryLoadComments(WorkerTaskDetailViewModel vm) {
-    final reportId = vm.taskDetails?['id'] as String? ?? '';
-    if (reportId.isNotEmpty && _comments.isEmpty && !_loadingComments) {
-      _loadComments(reportId);
+    final reportId = vm.taskDetails?['id']?.toString() ?? '';
+    if (reportId.isNotEmpty && !_commentsLoaded && !_loadingComments) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadComments(reportId);
+      });
     }
   }
 
@@ -66,12 +69,18 @@ class _TaskDetailContentState extends State<_TaskDetailContent> {
         setState(() {
           _comments = comments;
           _loadingComments = false;
+          _commentsLoaded = true;
         });
         _scrollToBottom();
         _subscribeToComments(reportId);
       }
     } catch (_) {
-      if (mounted) setState(() => _loadingComments = false);
+      if (mounted) {
+        setState(() {
+          _loadingComments = false;
+          _commentsLoaded = true;
+        });
+      }
     }
   }
 
@@ -211,7 +220,6 @@ class _TaskDetailContentState extends State<_TaskDetailContent> {
       case 'in_progress':
         return AppColors.warning;
       case 'completed':
-      case 'resolved':
         return AppColors.success;
       case 'closed':
         return Colors.grey;
@@ -287,7 +295,7 @@ class _TaskDetailContentState extends State<_TaskDetailContent> {
       address = locations.first['formatted_address'] as String?;
     }
 
-    final isResolved = status == 'completed' || status == 'resolved';
+    final isResolved = status == 'completed' || status == 'closed';
 
     return Stack(
       children: [
@@ -431,7 +439,7 @@ class _TaskDetailContentState extends State<_TaskDetailContent> {
                   ),
                   const SizedBox(height: 32),
                 ] else if (!isResolved) ...[
-                  const Text('Resolve Task', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  const Text('Complete Task', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                   const SizedBox(height: 16),
                   
                   // In Progress Button
@@ -504,14 +512,14 @@ class _TaskDetailContentState extends State<_TaskDetailContent> {
                       onPressed: vm.hasProofImage ? () async {
                         final success = await vm.resolveTask();
                         if (success && mounted) {
-                          _showSnackBar('Task marked as resolved!');
+                          _showSnackBar('Task marked as completed! Pending admin review.');
                         }
                       } : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.success,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
-                      child: const Text('Resolve Task', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      child: const Text('Mark as Completed', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
                   ),
                   const SizedBox(height: 48), // Bottom padding

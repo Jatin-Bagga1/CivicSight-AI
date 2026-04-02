@@ -11,16 +11,24 @@ class WorkerDashboardViewModel extends ChangeNotifier {
   
   List<Map<String, dynamic>> _allTasks = [];
   List<Map<String, dynamic>> _allReports = [];
+  List<Map<String, dynamic>> _historyTasks = [];
   bool _isLoading = true;
+  bool _isLoadingHistory = false;
   String? _errorMessage;
   bool _isUpdatingShift = false;
   String _shiftStatus = 'off_duty';
 
-  // Filter state
+  // Filter state (assigned tasks)
   String _statusFilter = 'all';
   String _severityFilter = 'all';
   String _dueFilter = 'all';
   StreamSubscription<List<Map<String, dynamic>>>? _assignmentSubscription;
+
+  // History filter state
+  String _historyStatusFilter = 'all';
+  String _historySeverityFilter = 'all';
+  String _historyCategoryFilter = 'all';
+  String _historyTimeFilter = 'all';
   
   // Map state
   LatLng _currentLocation = const LatLng(43.6532, -79.3832); // Toronto default
@@ -32,6 +40,7 @@ class WorkerDashboardViewModel extends ChangeNotifier {
   List<Map<String, dynamic>> get assignedTasks => _applyFilters(_allTasks);
   bool get hasTasks => _allTasks.isNotEmpty;
   bool get isLoading => _isLoading;
+  bool get isLoadingHistory => _isLoadingHistory;
   String? get errorMessage => _errorMessage;
   LatLng get currentLocation => _currentLocation;
   bool get locationLoaded => _locationLoaded;
@@ -42,12 +51,30 @@ class WorkerDashboardViewModel extends ChangeNotifier {
   bool get isUpdatingShift => _isUpdatingShift;
   String get shiftStatus => _shiftStatus;
   bool get showAllReports => _showAllReports;
+
+  // History getters
+  List<Map<String, dynamic>> get historyTasks => _applyHistoryFilters(_historyTasks);
+  bool get hasHistory => _historyTasks.isNotEmpty;
+  String get historyStatusFilter => _historyStatusFilter;
+  String get historySeverityFilter => _historySeverityFilter;
+  String get historyCategoryFilter => _historyCategoryFilter;
+  String get historyTimeFilter => _historyTimeFilter;
+
+  /// Unique category names from history for filter dropdown.
+  List<String> get historyCategories {
+    final cats = _historyTasks
+        .map((t) => t['ai_category_name'] as String? ?? 'Unknown')
+        .toSet()
+        .toList();
+    cats.sort();
+    return cats;
+  }
   int get totalTasksCount => _allTasks.length;
   int get inProgressCount =>
       _allTasks.where((t) => (t['status'] as String?) == 'in_progress').length;
   int get completedTodayCount {
     final now = DateTime.now();
-    return _allTasks.where((task) {
+    return _historyTasks.where((task) {
       final completedAt = DateTime.tryParse((task['completed_at'] as String?) ?? '');
       if (completedAt == null) return false;
       final local = completedAt.toLocal();
@@ -61,14 +88,14 @@ class WorkerDashboardViewModel extends ChangeNotifier {
     final now = DateTime.now();
     return _allTasks.where((task) {
       final status = (task['status'] as String?) ?? 'assigned';
-      if (status == 'completed' || status == 'resolved') return false;
+      if (status == 'completed' || status == 'closed') return false;
       final dueDate = DateTime.tryParse((task['due_date'] as String?) ?? '');
       return dueDate != null && dueDate.isBefore(now);
     }).length;
   }
 
   double get averageCompletionHours {
-    final durations = _allTasks
+    final durations = _historyTasks
         .map((task) {
           final assignedAt = DateTime.tryParse((task['assigned_at'] as String?) ?? '');
           final completedAt = DateTime.tryParse((task['completed_at'] as String?) ?? '');
@@ -143,6 +170,9 @@ class WorkerDashboardViewModel extends ChangeNotifier {
 
       // Also load all reports for "All Reports" map mode
       _allReports = await _supabase.getAllReportsWithLocations();
+
+      // Load history (completed / closed)
+      _historyTasks = await _supabase.getWorkerTaskHistory(uid);
 
       _buildMarkers();
 
@@ -314,6 +344,73 @@ class WorkerDashboardViewModel extends ChangeNotifier {
       default:
         return BitmapDescriptor.hueViolet;
     }
+  }
+
+  // ── History Filters ──
+
+  void updateHistoryStatusFilter(String value) {
+    _historyStatusFilter = value;
+    notifyListeners();
+  }
+
+  void updateHistorySeverityFilter(String value) {
+    _historySeverityFilter = value;
+    notifyListeners();
+  }
+
+  void updateHistoryCategoryFilter(String value) {
+    _historyCategoryFilter = value;
+    notifyListeners();
+  }
+
+  void updateHistoryTimeFilter(String value) {
+    _historyTimeFilter = value;
+    notifyListeners();
+  }
+
+  List<Map<String, dynamic>> _applyHistoryFilters(
+      List<Map<String, dynamic>> source) {
+    final now = DateTime.now();
+    return source.where((task) {
+      final status = (task['status'] as String?) ?? '';
+      final severity = (task['ai_severity'] as num?)?.toInt() ?? 0;
+      final category = task['ai_category_name'] as String? ?? 'Unknown';
+      final completedAt =
+          DateTime.tryParse((task['completed_at'] as String?) ?? '');
+
+      // Status filter
+      final statusMatch =
+          _historyStatusFilter == 'all' ? true : status == _historyStatusFilter;
+
+      // Severity filter
+      final severityMatch = switch (_historySeverityFilter) {
+        'high' => severity >= 4,
+        'medium' => severity == 3,
+        'low' => severity > 0 && severity <= 2,
+        _ => true,
+      };
+
+      // Category filter
+      final categoryMatch =
+          _historyCategoryFilter == 'all' ? true : category == _historyCategoryFilter;
+
+      // Time filter
+      final timeMatch = switch (_historyTimeFilter) {
+        'today' => completedAt != null &&
+            completedAt.toLocal().year == now.year &&
+            completedAt.toLocal().month == now.month &&
+            completedAt.toLocal().day == now.day,
+        'week' => completedAt != null &&
+            completedAt.isAfter(now.subtract(const Duration(days: 7))),
+        'month' => completedAt != null &&
+            completedAt.isAfter(now.subtract(const Duration(days: 30))),
+        'quarter' => completedAt != null &&
+            completedAt.isAfter(now.subtract(const Duration(days: 90))),
+        _ => true,
+      };
+
+      return statusMatch && severityMatch && categoryMatch && timeMatch;
+    }).toList();
   }
 
   @override

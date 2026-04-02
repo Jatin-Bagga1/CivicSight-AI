@@ -503,62 +503,6 @@ class _SignUpScreenContentState extends State<_SignUpScreenContent>
                                       onPressed: () =>
                                           _handleSignUp(viewModel),
                                     ),
-                                    const SizedBox(height: 24),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Divider(
-                                            color: isDark
-                                                ? Colors.white24
-                                                : Colors.grey.shade400,
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.symmetric(
-                                                  horizontal: 14),
-                                          child: Text(
-                                            "OR",
-                                            style: TextStyle(
-                                              color: isDark
-                                                  ? Colors.white54
-                                                  : Colors.grey.shade600,
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: Divider(
-                                            color: isDark
-                                                ? Colors.white24
-                                                : Colors.grey.shade400,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 20),
-                                    _SocialButton(
-                                      icon: Icons.g_mobiledata,
-                                      label: "Continue with Google",
-                                      isDark: isDark,
-                                      onPressed: isLoading
-                                          ? null
-                                          : () => _showSnackBar(
-                                              'Google Sign-Up coming soon!',
-                                              isError: true),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    _SocialButton(
-                                      icon: Icons.facebook,
-                                      label: "Continue with Facebook",
-                                      isDark: isDark,
-                                      onPressed: isLoading
-                                          ? null
-                                          : () => _showSnackBar(
-                                              'Facebook Sign-Up coming soon!',
-                                              isError: true),
-                                    ),
                                     const SizedBox(height: 28),
                                     Row(
                                       mainAxisAlignment:
@@ -759,55 +703,6 @@ class _GradientButton extends StatelessWidget {
                   letterSpacing: 0.3,
                 ),
               ),
-      ),
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isDark;
-  final VoidCallback? onPressed;
-  const _SocialButton(
-      {required this.icon,
-      required this.label,
-      required this.isDark,
-      this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          backgroundColor:
-              isDark ? Colors.white.withOpacity(0.06) : Colors.white,
-          side: BorderSide(
-            color: isDark ? Colors.white12 : Colors.grey.shade300,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppColors.radiusSm),
-          ),
-        ),
-        onPressed: onPressed,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon,
-                color: isDark ? Colors.white70 : Colors.blueGrey, size: 22),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: TextStyle(
-                color: isDark ? Colors.white70 : Colors.black87,
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

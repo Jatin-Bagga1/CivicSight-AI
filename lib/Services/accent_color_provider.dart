@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../constants/colors.dart';
 
 /// App-level provider that exposes the user's chosen accent colour.
 /// Loads from SharedPreferences on init and notifies listeners on change.
