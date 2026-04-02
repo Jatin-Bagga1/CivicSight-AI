@@ -300,6 +300,60 @@ class SupabaseService {
     return response;
   }
 
+  // ════════════════════════════════════════════
+  // ─── CATEGORY / WORKER PREFERENCE OPERATIONS ───
+  // ════════════════════════════════════════════
+
+  /// Fetch all active categories.
+  Future<List<Category>> getAllCategories() async {
+    final response = await _client
+        .from('categories')
+        .select()
+        .eq('is_active', true)
+        .order('category_group')
+        .order('name');
+    return (response as List)
+        .map((row) => Category.fromSupabase(row as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Fetch a worker's category preferences.
+  Future<List<WorkerCategoryPreference>> getWorkerCategoryPreferences(
+      String workerId) async {
+    final response = await _client
+        .from('worker_category_preferences')
+        .select()
+        .eq('worker_id', workerId);
+    return (response as List)
+        .map((row) =>
+            WorkerCategoryPreference.fromSupabase(row as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Replace a worker's category preferences with the given category IDs.
+  Future<void> saveWorkerCategoryPreferences(
+      String workerId, List<int> categoryIds) async {
+    // Delete existing preferences
+    await _client
+        .from('worker_category_preferences')
+        .delete()
+        .eq('worker_id', workerId);
+
+    // Insert new preferences
+    if (categoryIds.isNotEmpty) {
+      final rows = categoryIds
+          .asMap()
+          .entries
+          .map((e) => {
+                'worker_id': workerId,
+                'category_id': e.value,
+                'priority_rank': e.key + 1,
+              })
+          .toList();
+      await _client.from('worker_category_preferences').insert(rows);
+    }
+  }
+
   /// Realtime stream for comments on a specific report.
   RealtimeChannel subscribeToComments(
     String reportId,
