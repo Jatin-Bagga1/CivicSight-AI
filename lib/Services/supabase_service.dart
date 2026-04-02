@@ -134,7 +134,7 @@ class SupabaseService {
         .toList();
   }
 
-  /// Fetch task history for a worker (completed, resolved, closed).
+  /// Fetch task history for a worker (completed or rejected).
   Future<List<Map<String, dynamic>>> getWorkerTaskHistory(String workerId) async {
     final response = await _client
         .from('worker_assignments')
@@ -142,7 +142,7 @@ class SupabaseService {
           'assignment_status, assigned_at, started_at, completed_at, report:reports(*, report_locations(*), report_images(*))',
         )
         .eq('worker_id', workerId)
-        .inFilter('assignment_status', ['completed', 'resolved', 'closed'])
+        .inFilter('assignment_status', ['completed', 'rejected'])
         .order('completed_at', ascending: false);
 
     final rows = List<Map<String, dynamic>>.from(response);
@@ -184,10 +184,12 @@ class SupabaseService {
 
     final assignmentId = assignment['id'];
 
-    // Both tables use the same status; only admin should set 'resolved'
+    // worker_assignments allows: assigned, in_progress, completed, rejected
+    // reports allows: pending, open, assigned, in_progress, completed, closed, rejected
     final assignmentStatus =
-        (status == 'completed' || status == 'resolved') ? 'completed' : status;
-    final reportStatus = status;
+        (status == 'completed' || status == 'closed') ? 'completed' : status;
+    final reportStatus =
+        (status == 'completed' || status == 'closed') ? 'completed' : status;
 
     final assignmentUpdate = <String, dynamic>{
       'assignment_status': assignmentStatus,
@@ -195,6 +197,7 @@ class SupabaseService {
       if (assignmentStatus == 'in_progress') 'started_at': now,
       if (assignmentStatus == 'completed') 'completed_at': now,
       if (note != null && note.trim().isNotEmpty) 'worker_note': note.trim(),
+      if (proofImageUrl != null) 'proof_image_url': proofImageUrl,
     };
 
     await _client
@@ -205,7 +208,6 @@ class SupabaseService {
     final reportUpdate = <String, dynamic>{
       'status': reportStatus,
       'updated_at': now,
-      if (reportStatus == 'resolved') 'resolved_at': now,
     };
 
     await _client.from('reports').update(reportUpdate).eq('id', reportId);

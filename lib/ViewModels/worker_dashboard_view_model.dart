@@ -88,7 +88,7 @@ class WorkerDashboardViewModel extends ChangeNotifier {
     final now = DateTime.now();
     return _allTasks.where((task) {
       final status = (task['status'] as String?) ?? 'assigned';
-      if (status == 'completed' || status == 'resolved') return false;
+      if (status == 'completed' || status == 'closed') return false;
       final dueDate = DateTime.tryParse((task['due_date'] as String?) ?? '');
       return dueDate != null && dueDate.isBefore(now);
     }).length;

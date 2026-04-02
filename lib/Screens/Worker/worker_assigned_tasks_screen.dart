@@ -285,7 +285,6 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
       case 'in_progress':
         return AppColors.warning;
       case 'completed':
-      case 'resolved':
         return AppColors.success;
       case 'closed':
         return Colors.grey;
@@ -382,7 +381,7 @@ class WorkerAssignedTasksScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppColors.radius),
           boxShadow: AppColors.cardShadow(isDark),
           border: Border.all(
-            color: (status == 'resolved' || status == 'completed')
+            color: (status == 'completed')
                 ? AppColors.success.withOpacity(0.5)
                 : Colors.transparent,
             width: 1.5,

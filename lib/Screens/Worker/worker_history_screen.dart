@@ -141,8 +141,7 @@ class WorkerHistoryScreen extends StatelessWidget {
                 items: const [
                   DropdownMenuItem(value: 'all', child: Text('All')),
                   DropdownMenuItem(value: 'completed', child: Text('Completed')),
-                  DropdownMenuItem(value: 'resolved', child: Text('Resolved')),
-                  DropdownMenuItem(value: 'closed', child: Text('Closed')),
+                  DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
                 ],
                 onChanged: (v) {
                   if (v != null) vm.updateHistoryStatusFilter(v);
@@ -234,10 +233,8 @@ class WorkerHistoryScreen extends StatelessWidget {
     switch (status) {
       case 'completed':
         return AppColors.success;
-      case 'resolved':
-        return AppColors.primaryBlue;
-      case 'closed':
-        return Colors.grey;
+      case 'rejected':
+        return AppColors.error;
       default:
         return Colors.grey;
     }

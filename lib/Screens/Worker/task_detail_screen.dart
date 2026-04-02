@@ -220,7 +220,6 @@ class _TaskDetailContentState extends State<_TaskDetailContent> {
       case 'in_progress':
         return AppColors.warning;
       case 'completed':
-      case 'resolved':
         return AppColors.success;
       case 'closed':
         return Colors.grey;
@@ -296,7 +295,7 @@ class _TaskDetailContentState extends State<_TaskDetailContent> {
       address = locations.first['formatted_address'] as String?;
     }
 
-    final isResolved = status == 'completed' || status == 'resolved';
+    final isResolved = status == 'completed' || status == 'closed';
 
     return Stack(
       children: [
