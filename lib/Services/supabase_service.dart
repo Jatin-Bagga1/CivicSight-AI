@@ -300,6 +300,29 @@ class SupabaseService {
     return response;
   }
 
+  /// Realtime stream for comments on a specific report.
+  RealtimeChannel subscribeToComments(
+    String reportId,
+    void Function(Map<String, dynamic> newComment) onInsert,
+  ) {
+    return _client
+        .channel('comments:$reportId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'comments',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'report_id',
+            value: reportId,
+          ),
+          callback: (payload) {
+            onInsert(payload.newRecord);
+          },
+        )
+        .subscribe();
+  }
+
   // ════════════════════════════════════════════
   // ─── CATEGORY / WORKER PREFERENCE OPERATIONS ───
   // ════════════════════════════════════════════
@@ -354,26 +377,5 @@ class SupabaseService {
     }
   }
 
-  /// Realtime stream for comments on a specific report.
-  RealtimeChannel subscribeToComments(
-    String reportId,
-    void Function(Map<String, dynamic> newComment) onInsert,
-  ) {
-    return _client
-        .channel('comments:$reportId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'comments',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'report_id',
-            value: reportId,
-          ),
-          callback: (payload) {
-            onInsert(payload.newRecord);
-          },
-        )
-        .subscribe();
-  }
+  
 }
